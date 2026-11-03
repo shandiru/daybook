@@ -34,7 +34,8 @@ export const api = {
   typingUsers: () => req("/api/chat/typing"),
   game: () => req("/api/game"),
   joinGame: () => req("/api/game/join", "POST", {}),
-  gameMove: (move) => req("/api/game/move", "POST", move),
+  flipMemoryCard: (index) => req("/api/game/flip", "POST", { index }),
+  resolveMemoryTurn: () => req("/api/game/resolve", "POST", {}),
   gameRematch: () => req("/api/game/rematch", "POST", {}),
 };
 

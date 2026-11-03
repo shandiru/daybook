@@ -1,9 +1,8 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { api, session } from "../api.js";
 
-const lineIndex = (row, col) => row % 2 === 0
-  ? (row / 2) * 3 + Math.floor(col / 2)
-  : 12 + Math.floor(row / 2) * 4 + Math.floor(col / 2);
+const confetti = "\u{1F389} \u{2728} \u{1F38A} \u{2728} \u{1F389}";
+const trophy = "\u{1F3C6}";
 
 export default function Game() {
   const [game, setGame] = useState(null);
@@ -30,6 +29,18 @@ export default function Game() {
     return () => { clearInterval(timer); document.removeEventListener("visibilitychange", onVisible); };
   }, [refresh]);
 
+  useEffect(() => {
+    if (game?.status !== "playing" || game.flipped?.length !== 2) return undefined;
+    const timer = setTimeout(async () => {
+      try {
+        const next = await api.resolveMemoryTurn();
+        if (previousStatus.current === "playing" && next.status === "finished" && next.winner === me) setCelebration(true);
+        previousStatus.current = next.status; setGame(next);
+      } catch (e) { setError(e.message); }
+    }, 950);
+    return () => clearTimeout(timer);
+  }, [game, me]);
+
   async function act(action) {
     setBusy(true); setError("");
     try {
@@ -43,46 +54,35 @@ export default function Game() {
   const joined = game?.players?.includes(me);
   const playerIndex = joined ? game.players.indexOf(me) : -1;
   const isTurn = game?.status === "playing" && game.turn === me;
-  const score = game?.scores || [0, 0];
+  const scores = game?.scores || [0, 0];
   const message = !game ? "Loading the game…" : game.status === "waiting"
-    ? joined ? "Waiting for the other player to join…" : game.players[0] ? `${game.players[0]} is waiting for you.` : "Start a game and challenge your person."
-    : game.status === "playing" ? isTurn ? "Your turn — draw a line. Complete a box to go again!" : `${game.turn} is drawing a line…`
-    : game.winner ? game.winner === me ? "You own this board! Brilliant strategy!" : `${game.winner} wins this round!` : "It's a draw — every box is claimed!";
-
-  function edgeButton(edgeType, index, gridRow, gridCol) {
-    const owner = game?.board?.[index] || "";
-    const validTurn = joined && isTurn && !owner;
-    return <button key={`${edgeType}-${index}`} className={`dots-edge ${edgeType === "h" ? "horizontal" : "vertical"} ${owner ? "drawn" : ""} ${validTurn ? "can-draw" : ""} ${owner ? game.players.indexOf(owner) === 0 ? "first-player" : "second-player" : ""}`} style={{ gridRow: gridRow + 1, gridColumn: gridCol + 1 }} aria-label={`${edgeType === "h" ? "Horizontal" : "Vertical"} line ${index + 1}${owner ? ` drawn by ${owner}` : ""}`} disabled={busy || !validTurn} onClick={() => act(() => api.gameMove({ edgeType, edge: index }))} />;
-  }
+    ? joined ? "Waiting for the other player to join..." : game.players?.[0] ? `${game.players[0]} is waiting for you.` : "Find the pairs before your opponent does!"
+    : game.status === "finished" ? game.winner ? game.winner === me ? "You found more pairs! Amazing memory!" : `${game.winner} wins this memory match!` : "It's a draw — you found the same number of pairs!"
+    : game.flipped?.length === 2 ? game.matchPending ? "A match! Nice one!" : "No match — remember those cards!" : isTurn ? "Your turn — flip two cards." : `${game.turn} is remembering the cards...`;
 
   return <section className="game-panel">
-    <div className="game-heading"><div><span className="game-kicker">Think ahead. Steal a square.</span><h2 className="text-2xl font-extrabold tracking-tight">Dots &amp; Boxes</h2><p className="mt-1 text-sm text-ink/55">Take turns drawing lines. Claim the most boxes to win.</p></div><span className="game-emoji" aria-hidden="true">▦</span></div>
-    <div className="dots-scorebar">
-      <div className={`dots-player ${game?.turn === game?.players?.[0] && game?.status === "playing" ? "active" : ""}`}><span className="player-swatch first-player" /><span><strong>{game?.players?.[0] || "Player 1"}</strong><small>Player 1</small></span><b>{score[0]}</b></div>
+    <div className="game-heading"><div><span className="game-kicker">Flip. Remember. Match.</span><h2 className="text-2xl font-extrabold tracking-tight">Memory Match Duel</h2><p className="mt-1 text-sm text-ink/55">Find pairs to score. Match a pair and go again!</p></div><span className="game-emoji" aria-hidden="true">{"\u{1F9E0}"}</span></div>
+    <div className="memory-scorebar">
+      <div className={`memory-player ${game?.turn === game?.players?.[0] && game?.status === "playing" ? "active" : ""}`}><span className="memory-avatar first-player">{game?.players?.[0]?.slice(0, 1).toUpperCase() || "1"}</span><span><strong>{game?.players?.[0] || "Player 1"}</strong><small>Player 1</small></span><b>{scores[0]}</b></div>
       <span className="game-vs">VS</span>
-      <div className={`dots-player right ${game?.turn === game?.players?.[1] && game?.status === "playing" ? "active" : ""}`}><b>{score[1]}</b><span><strong>{game?.players?.[1] || "Player 2"}</strong><small>{game?.players?.[1] ? "Player 2" : "Waiting to join"}</small></span><span className="player-swatch second-player" /></div>
+      <div className={`memory-player right ${game?.turn === game?.players?.[1] && game?.status === "playing" ? "active" : ""}`}><b>{scores[1]}</b><span><strong>{game?.players?.[1] || "Player 2"}</strong><small>{game?.players?.[1] ? "Player 2" : "Waiting"}</small></span><span className="memory-avatar second-player">{game?.players?.[1]?.slice(0, 1).toUpperCase() || "2"}</span></div>
     </div>
     <div className="game-status" aria-live="polite"><span className={`game-status-dot ${game?.status === "playing" ? "live" : ""}`} />{message}</div>
-    <div className="dots-grid" role="grid" aria-label="Dots and Boxes game board">
-      {Array.from({ length: 7 }, (_, row) => Array.from({ length: 7 }, (_, col) => {
-        if (row % 2 === 0 && col % 2 === 0) return <span key={`${row}-${col}`} className="dots-point" style={{ gridRow: row + 1, gridColumn: col + 1 }} />;
-        if (row % 2 !== col % 2) {
-          const box = Math.floor(row / 2) * 3 + Math.floor(col / 2);
-          const owner = game?.boxes?.[box] || "";
-          return <span key={`${row}-${col}`} className={`dots-box ${owner ? game.players.indexOf(owner) === 0 ? "first-fill" : "second-fill" : ""}`} style={{ gridRow: row + 1, gridColumn: col + 1 }}>{owner ? owner.slice(0, 1).toUpperCase() : ""}</span>;
-        }
-        const edgeType = row % 2 === 0 ? "h" : "v";
-        return edgeButton(edgeType, lineIndex(row, col), row, col);
-      }))}
+    <div className="memory-board" role="grid" aria-label="Memory match cards">
+      {(game?.board || Array(16).fill("")).map((face, index) => {
+        const open = Boolean(face);
+        const matched = game?.matched?.includes(index);
+        return <button key={index} role="gridcell" aria-label={open ? `Card ${index + 1}: ${face}${matched ? ", matched" : ""}` : `Card ${index + 1}, face down`} className={`memory-card ${open ? "is-open" : ""} ${matched ? "is-matched" : ""}`} disabled={busy || !isTurn || open || game?.flipped?.length === 2} onClick={() => act(() => api.flipMemoryCard(index))}>{open ? face : <span aria-hidden="true">?</span>}</button>;
+      })}
     </div>
     {error && <p className="game-error" role="alert">{error}</p>}
     <div className="game-footer">
-      {game?.status === "waiting" && !joined && <button className="btn game-action" disabled={busy || Boolean(game.players?.length && game.players.length >= 2)} onClick={() => act(api.joinGame)}>{game.players?.length ? "Join the challenge" : "Start a game"}</button>}
+      {game?.status === "waiting" && !joined && <button className="btn game-action" disabled={busy} onClick={() => act(api.joinGame)}>{game.players?.length ? "Join the challenge" : "Start a game"}</button>}
+      {game?.status === "waiting" && joined && <span className="game-you-play">You’re in — player 2 can join now.</span>}
+      {game?.status === "playing" && joined && <span className="game-you-play">{isTurn ? "Your turn" : "Your opponent's turn"} - collect matching pairs</span>}
       {game?.status === "finished" && joined && <button className="btn game-action" disabled={busy} onClick={() => act(api.gameRematch)}>Play again</button>}
-      {game?.status === "playing" && joined && <span className="game-you-play">Your colour <span className={`player-swatch inline-swatch ${playerIndex === 0 ? "first-player" : "second-player"}`} /></span>}
-      {game?.status === "waiting" && joined && <span className="game-you-play">Waiting for player 2 to join.</span>}
-      {game?.status === "finished" && !joined && <span className="game-you-play">A new round is ready to start.</span>}
+      {game?.status === "finished" && !joined && <span className="game-you-play">Ask a player to start another round.</span>}
     </div>
-    {celebration && <div className="win-celebration" role="dialog" aria-modal="true" aria-label="Winner celebration"><div className="win-confetti" aria-hidden="true">🎉 ✨ 🎊 ✨ 🎉</div><div className="win-trophy" aria-hidden="true">🏆</div><p className="game-kicker">What a champion!</p><h3>{game?.winner} wins!</h3><p>You played brilliantly. Ready for a rematch?</p><button className="btn game-action" onClick={() => setCelebration(false)}>Let’s go!</button><button className="celebration-close" onClick={() => setCelebration(false)} aria-label="Close celebration">×</button></div>}
+    {celebration && <div className="win-celebration" role="dialog" aria-modal="true" aria-label="Winner celebration"><div className="win-confetti" aria-hidden="true">{confetti}</div><div className="win-trophy" aria-hidden="true">{trophy}</div><p className="game-kicker">What a champion!</p><h3>{game?.winner} wins!</h3><p>Your memory is unmatched!</p><button className="btn game-action" onClick={() => setCelebration(false)}>Let's go!</button><button className="celebration-close" onClick={() => setCelebration(false)} aria-label="Close celebration">x</button></div>}
   </section>;
 }

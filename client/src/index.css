@@ -40,36 +40,31 @@ button:active { transform: scale(.98); }
 .game-heading { display: flex; align-items: center; justify-content: space-between; padding: 22px 22px 16px; }
 .game-kicker { color: #0e7c7b; font-size: .68rem; font-weight: 800; letter-spacing: .1em; text-transform: uppercase; }
 .game-emoji { display: grid; width: 46px; height: 46px; place-items: center; border-radius: 16px; background: #e7f5f1; color: #0e7c7b; font-size: 1.8rem; }
-.dots-scorebar { display: flex; align-items: center; justify-content: space-between; margin: 0 18px; border: 1px solid #edf0ee; border-radius: 18px; background: #fafcfb; padding: 10px; }
-.dots-player { display: flex; min-width: 0; align-items: center; gap: 8px; border-radius: 12px; padding: 6px; }
-.dots-player.right { text-align: right; }
-.dots-player strong, .dots-player small { display: block; max-width: 96px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.dots-player strong { color: #263b38; font-size: .76rem; }
-.dots-player small { margin-top: 2px; color: #84918e; font-size: .64rem; }
-.dots-player > b { color: #364e49; font-size: 1.25rem; }
-.dots-player.active { background: #e7f5f1; }
-.player-swatch { width: 14px; height: 14px; flex: 0 0 auto; border-radius: 50%; background: #21a58c; }
-.player-swatch.second-player { background: #f0a34c; }
+.memory-scorebar { display: flex; align-items: center; justify-content: space-between; margin: 0 18px; border: 1px solid #edf0ee; border-radius: 18px; background: #fafcfb; padding: 10px; }
+.memory-player { display: flex; min-width: 0; align-items: center; gap: 8px; border-radius: 12px; padding: 6px; }
+.memory-player.right { flex-direction: row-reverse; text-align: right; }
+.memory-player strong, .memory-player small { display: block; max-width: 90px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.memory-player strong { color: #263b38; font-size: .76rem; }
+.memory-player small { margin-top: 2px; color: #84918e; font-size: .64rem; }
+.memory-player > b { color: #364e49; font-size: 1.25rem; }
+.memory-player.active { background: #e7f5f1; }
+.memory-avatar { display: grid; width: 34px; height: 34px; flex: 0 0 auto; place-items: center; border-radius: 12px; color: white; font-size: .85rem; font-weight: 900; }
+.memory-avatar.first-player { background: #21a58c; }
+.memory-avatar.second-player { background: #f0a34c; }
 .game-vs { color: #a2aeaa; font-size: .65rem; font-weight: 900; }
 .game-status { display: flex; min-height: 49px; align-items: center; justify-content: center; gap: 8px; padding: 8px 14px; color: #55706f; text-align: center; font-size: .8rem; font-weight: 700; }
 .game-status-dot { width: 7px; height: 7px; flex: 0 0 auto; border-radius: 50%; background: #d1dbd7; }
 .game-status-dot.live { background: #23a17c; box-shadow: 0 0 0 4px #23a17c1c; }
-.dots-grid { display: grid; width: min(100% - 72px, 350px); aspect-ratio: 1; grid-template: repeat(7,minmax(0,1fr)) / repeat(7,minmax(0,1fr)); margin: 0 auto; touch-action: manipulation; }
-.dots-point { z-index: 1; align-self: center; justify-self: center; width: 13px; height: 13px; border-radius: 50%; background: #344e49; box-shadow: 0 2px 5px #19352e35; }
-.dots-edge { align-self: center; justify-self: center; border: 0; border-radius: 999px; background: #e3ebe7; transition: background 120ms ease, box-shadow 120ms ease, transform 120ms ease; }
-.dots-edge.horizontal { width: 78%; height: 9px; }
-.dots-edge.vertical { width: 9px; height: 78%; }
-.dots-edge.can-draw:hover { background: #b7d9d0; transform: scale(1.12); }
-.dots-edge.drawn.first-player { background: #21a58c; box-shadow: 0 2px 5px #14715f40; }
-.dots-edge.drawn.second-player { background: #f0a34c; box-shadow: 0 2px 5px #9d652940; }
-.dots-box { display: grid; place-items: center; border-radius: 6px; color: white; font-size: 1.2rem; font-weight: 900; transition: background 180ms ease; }
-.dots-box.first-fill { background: #21a58c66; }
-.dots-box.second-fill { background: #f0a34c77; }
+.memory-board { display: grid; width: min(100% - 44px, 380px); aspect-ratio: 1; grid-template-columns: repeat(4,minmax(0,1fr)); grid-template-rows: repeat(4,minmax(0,1fr)); gap: 9px; margin: 0 auto; perspective: 900px; }
+.memory-card { display: grid; min-width: 0; place-items: center; border: 1px solid #d9e8e1; border-radius: 18px; background: linear-gradient(145deg,#0e7c7b,#126b68); color: #d7f0e9; font-size: 1.55rem; font-weight: 800; box-shadow: 0 4px 10px #143b3218; transition: transform 180ms ease, background 180ms ease, color 180ms ease; }
+.memory-card:not(:disabled):hover { transform: translateY(-3px) rotateX(5deg); box-shadow: 0 8px 14px #143b3225; }
+.memory-card.is-open { transform: rotateY(180deg); border-color: #e8e5d8; background: #fffdf5; color: #334c46; font-size: clamp(1.5rem,8vw,2.7rem); }
+.memory-card.is-matched { border-color: #b8e1d2; background: #e6f6ef; box-shadow: inset 0 0 0 2px #c8eadc; cursor: default; }
+.memory-card:disabled:not(.is-open):not(.is-matched) { cursor: default; opacity: .86; }
 .game-error { margin: 12px 18px 0; color: #b54d4d; text-align: center; font-size: .78rem; }
 .game-footer { display: flex; min-height: 66px; align-items: center; justify-content: center; padding: 14px 18px; }
 .game-action { width: 100%; max-width: 260px; }
-.game-you-play { display: inline-flex; align-items: center; gap: 7px; color: #71817c; text-align: center; font-size: .76rem; }
-.inline-swatch { display: inline-block; }
+.game-you-play { color: #71817c; text-align: center; font-size: .76rem; }
 .win-celebration { position: absolute; z-index: 2; inset: 14% 7% auto; display: flex; flex-direction: column; align-items: center; gap: 10px; border: 1px solid #c4e8dc; border-radius: 26px; background: #fffffff5; padding: 32px 22px 24px; text-align: center; box-shadow: 0 20px 70px #0a403a35; animation: win-pop 420ms cubic-bezier(.2,.9,.25,1.25) both; }
 .win-trophy { font-size: 4rem; animation: trophy-bounce 950ms ease-in-out infinite alternate; }
 .win-confetti { color: #e5a344; font-size: 1.35rem; letter-spacing: .25em; animation: confetti-dance 1s ease-in-out infinite alternate; }
@@ -79,7 +74,6 @@ button:active { transform: scale(.98); }
 @keyframes win-pop { from { opacity: 0; transform: scale(.82) translateY(16px); } to { opacity: 1; transform: scale(1) translateY(0); } }
 @keyframes trophy-bounce { to { transform: translateY(-8px) rotate(8deg); } }
 @keyframes confetti-dance { to { transform: translateY(-5px) rotate(-3deg); } }
-@media (max-width: 380px) { .dots-grid { width: min(100% - 44px, 350px); } .dots-point { width: 11px; height: 11px; } .dots-player { gap: 5px; padding: 4px; } .dots-player strong { max-width: 72px; font-size: .7rem; } }
 @media (max-width: 380px) {
   .status-pill { padding: 6px 8px; }
   .app-shell header { padding-left: 1rem; padding-right: 1rem; }

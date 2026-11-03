@@ -54,62 +54,82 @@ app.get("/api/chat/typing", auth, wrap(async (req, res) => {
   res.json(rows.map((row) => row.username));
 }));
 
-const boxEdges = (box) => {
-  const row = Math.floor(box / 3), col = box % 3;
-  return [row * 3 + col, (row + 1) * 3 + col, 12 + row * 4 + col, 12 + row * 4 + col + 1];
+const memoryFaces = ["\u{1F349}", "\u{1F353}", "\u{1F34B}", "\u{1F347}", "\u{1F352}", "\u{1F95D}", "\u{1F34D}", "\u{1F965}"];
+const shuffledMemoryBoard = () => {
+  const cards = [...memoryFaces, ...memoryFaces];
+  for (let i = cards.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [cards[i], cards[j]] = [cards[j], cards[i]]; }
+  return cards;
 };
-const emptyDotsGame = () => ({ room: "dots", players: [], board: Array(24).fill(""), boxes: Array(9).fill(""), scores: [0, 0], turn: "", winner: "", status: "waiting" });
-const getDotsGame = () => GameRoom.findOneAndUpdate(
-  { room: "dots" }, { $setOnInsert: { room: "dots" } }, { upsert: true, new: true, setDefaultsOnInsert: true }
+const emptyMemoryGame = () => ({ room: "memory", players: [], board: Array(16).fill(""), matched: [], flipped: [], flipper: "", matchPending: false, scores: [0, 0], turn: "", winner: "", status: "waiting" });
+const getMemoryGame = () => GameRoom.findOneAndUpdate(
+  { room: "memory" }, { $setOnInsert: { room: "memory" } }, { upsert: true, new: true, setDefaultsOnInsert: true }
 );
+const gameView = (game) => {
+  const view = game.toObject ? game.toObject() : { ...game };
+  const visible = new Set([...(view.flipped || []), ...(view.matched || [])]);
+  view.board = (view.board || []).map((face, index) => visible.has(index) ? face : "");
+  return view;
+};
 app.get("/api/game", auth, wrap(async (_req, res) => {
-  const game = await GameRoom.findOne({ room: "dots" });
-  res.json(game || emptyDotsGame());
+  const game = await GameRoom.findOne({ room: "memory" });
+  res.json(gameView(game || emptyMemoryGame()));
 }));
 app.post("/api/game/join", auth, wrap(async (req, res) => {
-  const game = await getDotsGame();
-  if (game.status === "finished") return res.status(409).json({ error: "This round is over. Start a rematch first." });
+  const game = await getMemoryGame();
+  if (game.status === "finished") return res.status(409).json({ error: "This game is over. Start a rematch first." });
   if (!game.players.includes(req.user.username)) {
     if (game.players.length >= 2) return res.status(409).json({ error: "This game already has two players." });
     game.players.push(req.user.username);
-    if (game.players.length === 2) { game.status = "playing"; game.turn = game.players[0]; }
+    if (game.players.length === 2) {
+      game.board = shuffledMemoryBoard(); game.matched = []; game.flipped = []; game.scores = [0, 0];
+      game.flipper = ""; game.matchPending = false; game.status = "playing"; game.turn = game.players[0];
+    }
     await game.save();
   }
-  res.json(game);
+  res.json(gameView(game));
 }));
-app.post("/api/game/move", auth, wrap(async (req, res) => {
-  const game = await getDotsGame();
+app.post("/api/game/flip", auth, wrap(async (req, res) => {
+  const game = await getMemoryGame();
+  const index = Number(req.body?.index);
   if (game.status !== "playing") return res.status(409).json({ error: "The game is not ready for a move." });
-  const playerIndex = game.players.indexOf(req.user.username);
-  if (playerIndex < 0) return res.status(403).json({ error: "Join the game before playing." });
+  if (!game.players.includes(req.user.username)) return res.status(403).json({ error: "Join the game before playing." });
   if (game.turn !== req.user.username) return res.status(409).json({ error: "Wait for your turn." });
-  const edgeType = req.body?.edgeType;
-  const edge = Number(req.body?.edge);
-  const valid = edgeType === "h" ? Number.isInteger(edge) && edge >= 0 && edge < 12 : edgeType === "v" && Number.isInteger(edge) && edge >= 12 && edge < 24;
-  if (!valid || game.board[edge]) return res.status(400).json({ error: "That line is not available." });
-  game.board[edge] = req.user.username;
-  let captured = 0;
-  for (let box = 0; box < 9; box++) {
-    if (!game.boxes[box] && boxEdges(box).every((side) => game.board[side])) {
-      game.boxes[box] = req.user.username;
-      captured++;
-    }
+  if (!Number.isInteger(index) || index < 0 || index >= 16 || game.matched.includes(index) || game.flipped.includes(index)) return res.status(400).json({ error: "That card is not available." });
+  if (game.flipped.length === 0) {
+    game.flipped = [index]; game.flipper = req.user.username; game.matchPending = false;
+  } else {
+    if (game.flipper !== req.user.username) return res.status(409).json({ error: "The other player is finishing their turn." });
+    game.flipped.push(index);
+    game.matchPending = game.board[game.flipped[0]] === game.board[index];
   }
-  game.scores[playerIndex] += captured;
-  if (game.boxes.every(Boolean)) {
-    game.status = "finished";
-    game.winner = game.scores[0] === game.scores[1] ? "" : game.players[game.scores[0] > game.scores[1] ? 0 : 1];
-  } else if (!captured) game.turn = game.players[1 - playerIndex];
   await game.save();
-  res.json(game);
+  res.json(gameView(game));
+}));
+app.post("/api/game/resolve", auth, wrap(async (req, res) => {
+  const game = await getMemoryGame();
+  if (game.status !== "playing" || game.flipped.length !== 2) return res.json(gameView(game));
+  if (!game.players.includes(req.user.username)) return res.status(403).json({ error: "Join the game before playing." });
+  const playerIndex = game.players.indexOf(game.flipper);
+  if (playerIndex < 0) return res.status(409).json({ error: "The current turn could not be resolved." });
+  if (game.matchPending) {
+    game.matched.push(...game.flipped); game.scores[playerIndex] += 1;
+    if (game.matched.length === game.board.length) {
+      game.status = "finished";
+      game.winner = game.scores[0] === game.scores[1] ? "" : game.players[game.scores[0] > game.scores[1] ? 0 : 1];
+    }
+  } else game.turn = game.players[1 - playerIndex];
+  game.flipped = []; game.flipper = ""; game.matchPending = false;
+  await game.save();
+  res.json(gameView(game));
 }));
 app.post("/api/game/rematch", auth, wrap(async (req, res) => {
-  const game = await getDotsGame();
-  if (game.status !== "finished") return res.status(409).json({ error: "Finish the current round before starting a rematch." });
+  const game = await getMemoryGame();
+  if (game.status !== "finished") return res.status(409).json({ error: "Finish the game before starting a rematch." });
   if (!game.players.includes(req.user.username)) return res.status(403).json({ error: "Only a player can start a rematch." });
-  game.board = Array(24).fill(""); game.boxes = Array(9).fill(""); game.scores = [0, 0]; game.winner = ""; game.turn = ""; game.status = "waiting"; game.players = [req.user.username];
+  game.players = [req.user.username]; game.board = Array(16).fill(""); game.matched = []; game.flipped = [];
+  game.flipper = ""; game.matchPending = false; game.scores = [0, 0]; game.winner = ""; game.turn = ""; game.status = "waiting";
   await game.save();
-  res.json(game);
+  res.json(gameView(game));
 }));
 function crud(path, Model, fields, listFilter) {
   const pick = (b) => Object.fromEntries(fields.filter((f) => b[f] !== undefined).map((f) => [f, b[f]]));
