@@ -32,6 +32,10 @@ export const api = {
   sendChat: (text) => req("/api/chat", "POST", { text }),
   setTyping: (typing) => req("/api/chat/typing", "PUT", { typing }),
   typingUsers: () => req("/api/chat/typing"),
+  game: () => req("/api/game"),
+  joinGame: () => req("/api/game/join", "POST", {}),
+  gameMove: (index) => req("/api/game/move", "POST", { index }),
+  gameRematch: () => req("/api/game/rematch", "POST", {}),
 };
 
 export const todayStr = () => {

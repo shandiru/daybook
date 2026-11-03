@@ -25,3 +25,12 @@ export const ChatPresence = models.ChatPresence || model("ChatPresence", new Sch
   username: { type: String, required: true, unique: true },
   typingUntil: { type: Date, default: null },
 }, { timestamps: true }));
+
+export const GameRoom = models.GameRoom || model("GameRoom", new Schema({
+  room: { type: String, default: "daybook", unique: true },
+  players: { type: [String], default: [] },
+  board: { type: [String], default: () => Array(9).fill("") },
+  turn: { type: String, default: "" },
+  winner: { type: String, default: "" },
+  status: { type: String, enum: ["waiting", "playing", "finished"], default: "waiting" },
+}, { timestamps: true }));

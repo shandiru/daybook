@@ -3,7 +3,7 @@ import express from "express";
 import cors from "cors";
 import mongoose from "mongoose";
 import jwt from "jsonwebtoken";
-import { Task, Expense, ChatMessage, ChatPresence } from "./models.js";
+import { Task, Expense, ChatMessage, ChatPresence, GameRoom } from "./models.js";
 
 const app = express();
 app.use(cors({ origin: process.env.CLIENT_URL?.split(",") || true }));
@@ -51,6 +51,45 @@ app.put("/api/chat/typing", auth, wrap(async (req, res) => {
 app.get("/api/chat/typing", auth, wrap(async (req, res) => {
   const rows = await ChatPresence.find({ username: { $ne: req.user.username }, typingUntil: { $gt: new Date() } });
   res.json(rows.map((row) => row.username));
+}));
+
+const winningLines = [[0,1,2],[3,4,5],[6,7,8],[0,3,6],[1,4,7],[2,5,8],[0,4,8],[2,4,6]];
+const getGame = () => GameRoom.findOneAndUpdate({ room: "daybook" }, { $setOnInsert: { room: "daybook" } }, { upsert: true, new: true, setDefaultsOnInsert: true });
+app.get("/api/game", auth, wrap(async (_req, res) => res.json(await getGame())));
+app.post("/api/game/join", auth, wrap(async (req, res) => {
+  const game = await getGame();
+  if (game.status === "finished") return res.status(409).json({ error: "This round is over. Start a rematch first." });
+  if (!game.players.includes(req.user.username)) {
+    if (game.players.length >= 2) return res.status(409).json({ error: "This game already has two players." });
+    game.players.push(req.user.username);
+    if (game.players.length === 2) { game.status = "playing"; game.turn = game.players[0]; }
+    await game.save();
+  }
+  res.json(game);
+}));
+app.post("/api/game/move", auth, wrap(async (req, res) => {
+  const game = await getGame();
+  const index = Number(req.body?.index);
+  if (game.status !== "playing") return res.status(409).json({ error: "The game is not ready for a move." });
+  if (!game.players.includes(req.user.username)) return res.status(403).json({ error: "Join the game before playing." });
+  if (game.turn !== req.user.username) return res.status(409).json({ error: "Wait for your turn." });
+  if (!Number.isInteger(index) || index < 0 || index > 8 || game.board[index]) return res.status(400).json({ error: "That square is not available." });
+  const mark = game.players[0] === req.user.username ? "X" : "O";
+  game.board[index] = mark;
+  if (winningLines.some(([a,b,c]) => game.board[a] && game.board[a] === game.board[b] && game.board[a] === game.board[c])) {
+    game.winner = req.user.username; game.status = "finished";
+  } else if (game.board.every(Boolean)) { game.status = "finished"; }
+  else game.turn = game.players.find((player) => player !== req.user.username);
+  await game.save();
+  res.json(game);
+}));
+app.post("/api/game/rematch", auth, wrap(async (req, res) => {
+  const game = await getGame();
+  if (game.status !== "finished") return res.status(409).json({ error: "Finish the current round before starting a rematch." });
+  if (!game.players.includes(req.user.username)) return res.status(403).json({ error: "Only a player can start a rematch." });
+  game.board = Array(9).fill(""); game.winner = ""; game.turn = ""; game.status = "waiting"; game.players = [req.user.username];
+  await game.save();
+  res.json(game);
 }));
 
 function crud(path, Model, fields, listFilter) {
