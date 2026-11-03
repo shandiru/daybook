@@ -4,7 +4,7 @@
 
 html, body { min-height: 100%; -webkit-tap-highlight-color: transparent; }
 html { background: #f4f7f6; }
-body { padding-top: env(safe-area-inset-top); background: #f4f7f6; }
+body { padding-top: env(safe-area-inset-top); background: #f4f7f6; overscroll-behavior-y: none; }
 button { transition: transform 140ms ease, background-color 140ms ease, color 140ms ease; }
 button:active { transform: scale(.98); }
 .app-shell { background: #f4f7f6; }
@@ -16,9 +16,14 @@ button:active { transform: scale(.98); }
 .install-button { border-radius: 999px; background: #d9efeb; padding: 8px 12px; color: #075d5b; font-size: .75rem; font-weight: 800; }
 .avatar-button { display: grid; width: 34px; height: 34px; place-items: center; border: 0; border-radius: 50%; background: #e6e9e5; color: #405553; font-size: .8rem; font-weight: 800; }
 .bottom-nav { z-index: 10; border-top: 1px solid #e4eae7; background: rgb(255 255 255 / 94%); backdrop-filter: blur(18px); }
-.nav-item { display: flex; flex-direction: column; align-items: center; gap: 3px; border: 0; background: transparent; padding: 8px; color: #84918e; font-size: .7rem; font-weight: 700; }
+.nav-item { display: flex; min-height: 48px; flex-direction: column; align-items: center; justify-content: center; gap: 3px; border: 0; background: transparent; padding: 8px; color: #84918e; font-size: .7rem; font-weight: 700; }
 .nav-item.active { color: #0e7c7b; }
 .nav-icon { font-size: 1.2rem; line-height: 1.2; }
+@media (max-width: 380px) {
+  .status-pill { padding: 6px 8px; }
+  .app-shell header { padding-left: 1rem; padding-right: 1rem; }
+  .app-shell main { padding-left: 1rem; padding-right: 1rem; }
+}
 @layer components {
   .field { @apply w-full rounded-2xl border border-ink/10 bg-white px-4 py-3 text-base shadow-sm outline-none focus:border-teal focus:ring-2 focus:ring-teal/20; }
   .btn { @apply rounded-2xl bg-teal px-4 py-3 font-bold text-white shadow-sm active:bg-teal-dark disabled:opacity-50; }

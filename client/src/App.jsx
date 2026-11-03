@@ -24,8 +24,7 @@ export default function App() {
   }, []);
 
   if (!session.token || !user) return <Login onDone={setUser} />;
-
-  const tabs = [["tasks", "My day", "◷"], ["money", "Spending", "↗"]];
+  const tabs = [["tasks", "My day"], ["money", "Spending"]];
   const today = new Intl.DateTimeFormat("en-LK", { weekday: "long", day: "numeric", month: "long" }).format(new Date());
   return (
     <div className="app-shell mx-auto flex min-h-screen max-w-2xl flex-col">
@@ -48,7 +47,7 @@ export default function App() {
 
       <nav className="bottom-nav fixed inset-x-0 bottom-0" style={{ paddingBottom: "env(safe-area-inset-bottom)" }}>
         <div className="mx-auto grid max-w-2xl grid-cols-2 px-5 py-2 sm:px-8">
-          {tabs.map(([key, label, icon]) => <button key={key} onClick={() => setTab(key)} className={`nav-item ${tab === key ? "active" : ""}`}><span className="nav-icon">{icon}</span><span>{label}</span></button>)}
+          {tabs.map(([key, label]) => <button key={key} onClick={() => setTab(key)} className={`nav-item ${tab === key ? "active" : ""}`}><span>{label}</span></button>)}
         </div>
       </nav>
     </div>
