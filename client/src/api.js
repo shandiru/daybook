@@ -36,6 +36,10 @@ export const api = {
   joinGame: () => req("/api/game/join", "POST", {}),
   gameMove: (index) => req("/api/game/move", "POST", { index }),
   gameRematch: () => req("/api/game/rematch", "POST", {}),
+  multiplayerGame: (kind) => req(`/api/games/${kind}`),
+  joinMultiplayerGame: (kind) => req(`/api/games/${kind}/join`, "POST", {}),
+  multiplayerMove: (kind, move) => req(`/api/games/${kind}/move`, "POST", move),
+  multiplayerRematch: (kind) => req(`/api/games/${kind}/rematch`, "POST", {}),
 };
 
 export const todayStr = () => {

@@ -30,6 +30,8 @@ export const GameRoom = models.GameRoom || model("GameRoom", new Schema({
   room: { type: String, default: "daybook", unique: true },
   players: { type: [String], default: [] },
   board: { type: [String], default: () => Array(9).fill("") },
+  choices: { type: [String], default: () => ["", ""] },
+  scores: { type: [Number], default: () => [0, 0] },
   turn: { type: String, default: "" },
   winner: { type: String, default: "" },
   status: { type: String, enum: ["waiting", "playing", "finished"], default: "waiting" },
