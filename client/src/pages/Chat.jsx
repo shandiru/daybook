@@ -18,8 +18,10 @@ export default function Chat() {
   }, []);
   useEffect(() => {
     refresh();
-    const timer = setInterval(refresh, 1200);
-    return () => { clearInterval(timer); clearTimeout(typingTimer.current); api.setTyping(false).catch(() => {}); };
+    const timer = setInterval(() => { if (document.visibilityState === "visible") refresh(); }, 3000);
+    const onVisible = () => { if (document.visibilityState === "visible") refresh(); };
+    document.addEventListener("visibilitychange", onVisible);
+    return () => { clearInterval(timer); document.removeEventListener("visibilitychange", onVisible); clearTimeout(typingTimer.current); api.setTyping(false).catch(() => {}); };
   }, [refresh]);
   useEffect(() => { endRef.current?.scrollIntoView({ behavior: "smooth" }); }, [messages]);
   function onChange(value) {

@@ -34,12 +34,8 @@ export const api = {
   typingUsers: () => req("/api/chat/typing"),
   game: () => req("/api/game"),
   joinGame: () => req("/api/game/join", "POST", {}),
-  gameMove: (index) => req("/api/game/move", "POST", { index }),
+  gameMove: (move) => req("/api/game/move", "POST", move),
   gameRematch: () => req("/api/game/rematch", "POST", {}),
-  multiplayerGame: (kind) => req(`/api/games/${kind}`),
-  joinMultiplayerGame: (kind) => req(`/api/games/${kind}/join`, "POST", {}),
-  multiplayerMove: (kind, move) => req(`/api/games/${kind}/move`, "POST", move),
-  multiplayerRematch: (kind) => req(`/api/games/${kind}/rematch`, "POST", {}),
 };
 
 export const todayStr = () => {

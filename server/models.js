@@ -29,8 +29,8 @@ export const ChatPresence = models.ChatPresence || model("ChatPresence", new Sch
 export const GameRoom = models.GameRoom || model("GameRoom", new Schema({
   room: { type: String, default: "daybook", unique: true },
   players: { type: [String], default: [] },
-  board: { type: [String], default: () => Array(9).fill("") },
-  choices: { type: [String], default: () => ["", ""] },
+  board: { type: [String], default: () => Array(24).fill("") },
+  boxes: { type: [String], default: () => Array(9).fill("") },
   scores: { type: [Number], default: () => [0, 0] },
   turn: { type: String, default: "" },
   winner: { type: String, default: "" },
