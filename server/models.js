@@ -15,3 +15,13 @@ export const Expense = models.Expense || model("Expense", new Schema({
   category: { type: String, default: "Other" },
   date: { type: String, required: true, index: true },
 }, { timestamps: true }));
+
+export const ChatMessage = models.ChatMessage || model("ChatMessage", new Schema({
+  sender: { type: String, required: true, index: true },
+  text: { type: String, required: true, trim: true, maxlength: 2000 },
+}, { timestamps: true }));
+
+export const ChatPresence = models.ChatPresence || model("ChatPresence", new Schema({
+  username: { type: String, required: true, unique: true },
+  typingUntil: { type: Date, default: null },
+}, { timestamps: true }));

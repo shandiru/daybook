@@ -28,6 +28,10 @@ export const api = {
   expenses: (year) => req(`/api/expenses?year=${year}`),
   addExpense: (b) => req("/api/expenses", "POST", b),
   delExpense: (id) => req(`/api/expenses/${id}`, "DELETE"),
+  chat: () => req("/api/chat"),
+  sendChat: (text) => req("/api/chat", "POST", { text }),
+  setTyping: (typing) => req("/api/chat/typing", "PUT", { typing }),
+  typingUsers: () => req("/api/chat/typing"),
 };
 
 export const todayStr = () => {

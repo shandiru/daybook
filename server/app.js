@@ -3,7 +3,7 @@ import express from "express";
 import cors from "cors";
 import mongoose from "mongoose";
 import jwt from "jsonwebtoken";
-import { Task, Expense } from "./models.js";
+import { Task, Expense, ChatMessage, ChatPresence } from "./models.js";
 
 const app = express();
 app.use(cors({ origin: process.env.CLIENT_URL?.split(",") || true }));
@@ -19,19 +19,39 @@ app.use(async (_req, res, next) => {
 const wrap = (fn) => (req, res) => Promise.resolve(fn(req, res)).catch((e) => res.status(400).json({ error: e.message }));
 
 function auth(req, res, next) {
-  try { jwt.verify((req.headers.authorization || "").replace("Bearer ", ""), process.env.JWT_SECRET); next(); }
+  try { req.user = jwt.verify((req.headers.authorization || "").replace("Bearer ", ""), process.env.JWT_SECRET); next(); }
   catch { res.status(401).json({ error: "Please log in again" }); }
 }
 
 app.get("/api/health", (_q, r) => r.json({ ok: true }));
 
-// Single personal account, credentials come from .env (APP_USER / APP_PASS)
+// Credentials come from .env (APP_USER / APP_PASS and APP_USER2 / APP_PASS2)
 app.post("/api/auth/login", (req, res) => {
   const { username, password } = req.body || {};
-  if (username !== process.env.APP_USER || password !== process.env.APP_PASS)
+  const valid = (username === process.env.APP_USER && password === process.env.APP_PASS)
+    || (username === process.env.APP_USER2 && password === process.env.APP_PASS2);
+  if (!valid)
     return res.status(400).json({ error: "Wrong username or password" });
-  res.json({ token: jwt.sign({ me: true }, process.env.JWT_SECRET, { expiresIn: "365d" }), user: { name: username } });
+  res.json({ token: jwt.sign({ username }, process.env.JWT_SECRET, { expiresIn: "365d" }), user: { name: username } });
 });
+
+app.get("/api/chat", auth, wrap(async (_req, res) => {
+  res.json(await ChatMessage.find().sort({ createdAt: 1 }).limit(300));
+}));
+app.post("/api/chat", auth, wrap(async (req, res) => {
+  const text = String(req.body?.text || "").trim();
+  if (!text) return res.status(400).json({ error: "Message cannot be empty" });
+  res.status(201).json(await ChatMessage.create({ sender: req.user.username, text }));
+}));
+app.put("/api/chat/typing", auth, wrap(async (req, res) => {
+  await ChatPresence.findOneAndUpdate({ username: req.user.username },
+    { typingUntil: req.body?.typing ? new Date(Date.now() + 4000) : null }, { upsert: true, new: true });
+  res.json({ ok: true });
+}));
+app.get("/api/chat/typing", auth, wrap(async (req, res) => {
+  const rows = await ChatPresence.find({ username: { $ne: req.user.username }, typingUntil: { $gt: new Date() } });
+  res.json(rows.map((row) => row.username));
+}));
 
 function crud(path, Model, fields, listFilter) {
   const pick = (b) => Object.fromEntries(fields.filter((f) => b[f] !== undefined).map((f) => [f, b[f]]));
