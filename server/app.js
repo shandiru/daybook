@@ -3,47 +3,12 @@ import express from "express";
 import cors from "cors";
 import mongoose from "mongoose";
 import jwt from "jsonwebtoken";
-import webpush from "web-push";
 import { randomUUID } from "node:crypto";
-import { Task, Expense, ChatMessage, ChatPresence, PushSubscription, GameRoom, LudoRoom, GameHistory } from "./models.js";
+import { Task, Expense, ChatMessage, ChatPresence, GameRoom, LudoRoom, GameHistory } from "./models.js";
 
 const app = express();
 app.use(cors({ origin: process.env.CLIENT_URL?.split(",") || true }));
 app.use(express.json());
-
-const pushEnabled = Boolean(process.env.VAPID_PUBLIC_KEY && process.env.VAPID_PRIVATE_KEY);
-if (pushEnabled) {
-  webpush.setVapidDetails(
-    process.env.VAPID_SUBJECT || "mailto:admin@example.com",
-    process.env.VAPID_PUBLIC_KEY,
-    process.env.VAPID_PRIVATE_KEY,
-  );
-}
-
-async function sendPushToOtherUsers(sender, message) {
-  if (!pushEnabled) return;
-  const subscriptions = await PushSubscription.find({ username: { $ne: sender } }).lean();
-  const payload = JSON.stringify({
-    title: `${sender} sent a message`,
-    body: message.text,
-    tag: `chat-${message._id}`,
-    url: "/?tab=chat",
-  });
-  await Promise.allSettled(subscriptions.map(async (subscription) => {
-    try {
-      await webpush.sendNotification({
-        endpoint: subscription.endpoint,
-        keys: subscription.keys,
-      }, payload);
-    } catch (error) {
-      if (error.statusCode === 404 || error.statusCode === 410) {
-        await PushSubscription.deleteOne({ endpoint: subscription.endpoint });
-      } else {
-        console.error("Push notification failed:", error.message);
-      }
-    }
-  }));
-}
 
 // Reuse the DB connection between serverless calls on Vercel
 let conn;
@@ -80,29 +45,7 @@ app.get("/api/chat", auth, wrap(async (req, res) => {
 app.post("/api/chat", auth, wrap(async (req, res) => {
   const text = String(req.body?.text || "").trim();
   if (!text) return res.status(400).json({ error: "Message cannot be empty" });
-  const message = await ChatMessage.create({ sender: req.user.username, text, channel: chatChannel(req.body?.channel), seenBy: [req.user.username] });
-  await sendPushToOtherUsers(req.user.username, message);
-  res.status(201).json(message);
-}));
-
-app.get("/api/push/public-key", auth, (_req, res) => {
-  if (!pushEnabled) return res.status(503).json({ error: "Push notifications are not configured" });
-  res.json({ publicKey: process.env.VAPID_PUBLIC_KEY });
-});
-app.post("/api/push/subscribe", auth, wrap(async (req, res) => {
-  if (!pushEnabled) return res.status(503).json({ error: "Push notifications are not configured" });
-  const { endpoint, keys } = req.body || {};
-  if (!endpoint || !keys?.p256dh || !keys?.auth) return res.status(400).json({ error: "Invalid push subscription" });
-  await PushSubscription.findOneAndUpdate(
-    { endpoint },
-    { username: req.user.username, endpoint, keys: { p256dh: keys.p256dh, auth: keys.auth } },
-    { upsert: true, new: true, setDefaultsOnInsert: true },
-  );
-  res.status(201).json({ ok: true });
-}));
-app.delete("/api/push/subscribe", auth, wrap(async (req, res) => {
-  if (req.body?.endpoint) await PushSubscription.deleteOne({ endpoint: req.body.endpoint, username: req.user.username });
-  res.json({ ok: true });
+  res.status(201).json(await ChatMessage.create({ sender: req.user.username, text, channel: chatChannel(req.body?.channel), seenBy: [req.user.username] }));
 }));
 app.get("/api/chat/unread", auth, wrap(async (req, res) => {
   const rows = await ChatMessage.find({ sender: { $ne: req.user.username }, seenBy: { $ne: req.user.username } }).sort({ createdAt: -1 }).lean();
