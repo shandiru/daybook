@@ -72,7 +72,7 @@ button:active { transform: scale(.98); }
 .memory-card.is-open { transform: scale(1.03); border-color: #e8e5d8; background: #fffdf5; color: #334c46; font-size: clamp(1.5rem, 6vw, 3.5rem); }
 .memory-card.is-matched { border-color: #b8e1d2; background: #e6f6ef; box-shadow: inset 0 0 0 2px #c8eadc; cursor: default; }
 .memory-card:disabled:not(.is-open):not(.is-matched) { cursor: default; opacity: .86; }
-.ludo-game-panel { background: linear-gradient(180deg, #fff 0, #fbfcfb 100%); }
+.ludo-game-panel { container-type: inline-size; background: linear-gradient(180deg, #fff 0, #fbfcfb 100%); }
 .ludo-heading { padding-bottom: 14px; }
 .ludo-scorebar { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin: 0 18px; }
 .ludo-player-card { position: relative; display: flex; min-width: 0; align-items: center; gap: 9px; border: 1px solid #e6ebe8; border-radius: 16px; background: #fff; padding: 9px; box-shadow: 0 3px 12px #143b3208; }
@@ -145,7 +145,7 @@ button:active { transform: scale(.98); }
 .ludo-footer { min-height: 58px; }
 @keyframes ludo-pulse { to { transform: translateY(-2px) scale(1.08); } }
 @keyframes dice-roll { 20% { transform: rotate(18deg) scale(.88); } 45% { transform: rotate(-22deg) scale(1.06); } 70% { transform: rotate(14deg) scale(.94); } 90% { transform: rotate(-5deg) scale(1.02); } }
-@media (max-width: 520px) {
+@container (max-width: 650px) {
   .ludo-scorebar { gap: 7px; margin: 0 12px; }
   .ludo-player-card { gap: 7px; border-radius: 13px; padding: 7px; }
   .ludo-player-card .memory-avatar { width: 30px; height: 30px; border-radius: 10px; }
@@ -164,7 +164,7 @@ button:active { transform: scale(.98); }
   .safe-star { font-size: clamp(.32rem, 1.8vw, .55rem); }
   .ludo-heading { padding: 18px 18px 12px; }
 }
-@media (max-width: 360px) {
+@container (max-width: 380px) {
   .ludo-play-area { padding: 0 4px; }
   .classic-cell { border-color: #a9b5b0; }
   .ludo-controls { margin-inline: 2px; }
