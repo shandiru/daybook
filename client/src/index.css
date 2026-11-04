@@ -56,9 +56,10 @@ button:active { transform: scale(.98); }
 .game-status-dot { width: 7px; height: 7px; flex: 0 0 auto; border-radius: 50%; background: #d1dbd7; }
 .game-status-dot.live { background: #23a17c; box-shadow: 0 0 0 4px #23a17c1c; }
 .memory-board { display: grid; width: min(100% - 44px, 420px); aspect-ratio: 3 / 2; grid-template-columns: repeat(6,minmax(0,1fr)); grid-template-rows: repeat(4,minmax(0,1fr)); gap: 8px; margin: 0 auto; perspective: 900px; }
-.memory-card { display: grid; min-width: 0; place-items: center; border: 1px solid #d9e8e1; border-radius: 18px; background: linear-gradient(145deg,#0e7c7b,#126b68); color: #d7f0e9; font-size: 1.55rem; font-weight: 800; box-shadow: 0 4px 10px #143b3218; transition: transform 180ms ease, background 180ms ease, color 180ms ease; }
+.memory-board { width: min(100% - 32px, 640px); gap: clamp(5px, 1.5vw, 10px); }
+.memory-card { display: grid; min-width: 0; min-height: 0; place-items: center; overflow: hidden; border: 1px solid #d9e8e1; border-radius: 18px; background: linear-gradient(145deg,#0e7c7b,#126b68); color: #d7f0e9; font-size: clamp(1.15rem, 5vw, 2.5rem); font-weight: 800; line-height: 1; box-shadow: 0 4px 10px #143b3218; transition: transform 180ms ease, background 180ms ease, color 180ms ease; }
 .memory-card:not(:disabled):hover { transform: translateY(-3px) rotateX(5deg); box-shadow: 0 8px 14px #143b3225; }
-.memory-card.is-open { transform: rotateY(180deg); border-color: #e8e5d8; background: #fffdf5; color: #334c46; font-size: clamp(1.5rem,8vw,2.7rem); }
+.memory-card.is-open { transform: scale(1.03); border-color: #e8e5d8; background: #fffdf5; color: #334c46; font-size: clamp(1.5rem, 6vw, 3.5rem); }
 .memory-card.is-matched { border-color: #b8e1d2; background: #e6f6ef; box-shadow: inset 0 0 0 2px #c8eadc; cursor: default; }
 .memory-card:disabled:not(.is-open):not(.is-matched) { cursor: default; opacity: .86; }
 .tic-board { display: grid; width: min(100% - 44px, 360px); aspect-ratio: 1; grid-template-columns: repeat(3,minmax(0,1fr)); gap: 10px; margin: 0 auto; }
@@ -73,6 +74,15 @@ button:active { transform: scale(.98); }
 .win-celebration h3 { color: #0e7c7b; font-size: 1.8rem; font-weight: 950; }
 .win-celebration p:not(.game-kicker) { color: #71817c; font-size: .86rem; }
 .celebration-close { position: absolute; top: 10px; right: 14px; border: 0; background: transparent; color: #71817c; font-size: 1.6rem; }
+.game-chat-dock { position: fixed; z-index: 30; right: max(18px, env(safe-area-inset-right)); bottom: calc(82px + env(safe-area-inset-bottom)); }
+.game-chat-toggle { border: 0; border-radius: 999px; background: #0e7c7b; padding: 13px 18px; color: white; font-weight: 800; box-shadow: 0 8px 24px #143b3235; }
+.game-chat-popover { position: absolute; right: 0; bottom: 58px; width: min(380px, calc(100vw - 32px)); height: min(500px, calc(100dvh - 150px)); }
+.game-chat-popover .chat-panel { height: 100%; min-height: 0; border-radius: 22px; box-shadow: 0 18px 54px #143b3235; }
+.game-chat-popover .chat-heading { padding: 12px 42px 12px 14px; }
+.game-chat-popover .chat-messages { min-height: 0; padding: 12px; }
+.game-chat-popover .chat-compose { padding: 8px; }
+.game-chat-popover .chat-compose .btn { padding: 10px 12px; }
+.game-chat-close { position: absolute; z-index: 1; top: 12px; right: 12px; width: 28px; height: 28px; border: 0; border-radius: 50%; background: #edf3f0; color: #405553; font-size: 20px; line-height: 1; }
 @keyframes win-pop { from { opacity: 0; transform: scale(.82) translateY(16px); } to { opacity: 1; transform: scale(1) translateY(0); } }
 @keyframes trophy-bounce { to { transform: translateY(-8px) rotate(8deg); } }
 @keyframes confetti-dance { to { transform: translateY(-5px) rotate(-3deg); } }

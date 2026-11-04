@@ -66,7 +66,7 @@ const getMemoryGame = async () => {
   const game = await GameRoom.findOneAndUpdate(
     { room: "memory" }, { $setOnInsert: { room: "memory" } }, { upsert: true, new: true, setDefaultsOnInsert: true }
   );
-  if (game.board.length !== 24) {
+  if (game.board.length !== 24 || game.board.some((face) => face && !memoryFaces.includes(face))) {
     game.players = []; game.matchId = ""; game.board = Array(24).fill(""); game.matched = []; game.flipped = [];
     game.flipper = ""; game.matchPending = false; game.scores = [0, 0]; game.turn = ""; game.winner = ""; game.status = "waiting";
     await game.save();
