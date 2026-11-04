@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 import { api, session } from "../api.js";
+import GameHistory from "../components/GameHistory.jsx";
 
 export default function TicTacToe() {
   const [game, setGame] = useState(null);
@@ -25,7 +26,7 @@ export default function TicTacToe() {
     ? joined ? "Waiting for the other player to join..." : game.players?.length ? `${game.players[0]} is waiting for you.` : "Join and challenge the other player."
     : game.status === "finished" ? game.winner ? `${game.winner} wins the round.` : "The board is full. The game is a draw."
     : game.turn === me ? "Your turn. Choose an empty square." : `${game.turn} is choosing a square.`;
-  return <section className="game-panel">
+  return <div className="space-y-3"><section className="game-panel">
     <div className="game-heading"><div><span className="game-kicker">Plan your next move</span><h2 className="text-2xl font-extrabold tracking-tight">Tic Tac Toe</h2><p className="mt-1 text-sm text-ink/55">A quick strategy match for two players.</p></div><span className="game-emoji" aria-hidden="true">X / O</span></div>
     <div className="memory-scorebar">
       <div className="memory-player"><span className="memory-avatar first-player">X</span><span><strong>{game?.players?.[0] || "Player 1"}</strong><small>Player 1</small></span></div>
@@ -44,5 +45,5 @@ export default function TicTacToe() {
       {game?.status === "finished" && joined && <button className="btn game-action" disabled={busy} onClick={() => act(api.rematchTicTacToe)}>Play again</button>}
       {game?.status === "finished" && !joined && <span className="game-you-play">A player can start another round.</span>}
     </div>
-  </section>;
+  </section><GameHistory type="tic-tac-toe" /></div>;
 }

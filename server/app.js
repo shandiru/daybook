@@ -3,7 +3,8 @@ import express from "express";
 import cors from "cors";
 import mongoose from "mongoose";
 import jwt from "jsonwebtoken";
-import { Task, Expense, ChatMessage, ChatPresence, GameRoom, TicTacToeRoom } from "./models.js";
+import { randomUUID } from "node:crypto";
+import { Task, Expense, ChatMessage, ChatPresence, GameRoom, TicTacToeRoom, GameHistory } from "./models.js";
 
 const app = express();
 app.use(cors({ origin: process.env.CLIENT_URL?.split(",") || true }));
@@ -66,7 +67,7 @@ const getMemoryGame = async () => {
     { room: "memory" }, { $setOnInsert: { room: "memory" } }, { upsert: true, new: true, setDefaultsOnInsert: true }
   );
   if (game.board.length !== 24) {
-    game.players = []; game.board = Array(24).fill(""); game.matched = []; game.flipped = [];
+    game.players = []; game.matchId = ""; game.board = Array(24).fill(""); game.matched = []; game.flipped = [];
     game.flipper = ""; game.matchPending = false; game.scores = [0, 0]; game.turn = ""; game.winner = ""; game.status = "waiting";
     await game.save();
   }
@@ -81,6 +82,16 @@ const gameView = (game) => {
 app.get("/api/game", auth, wrap(async (_req, res) => {
   res.json(gameView(await getMemoryGame()));
 }));
+app.get("/api/game/history", auth, wrap(async (req, res) => {
+  const game = req.query.type === "tic-tac-toe" ? "tic-tac-toe" : "memory";
+  const records = await GameHistory.find({ game }).sort({ createdAt: -1 }).limit(50).lean();
+  const wins = await GameHistory.aggregate([
+    { $match: { game, winner: { $ne: "" } } },
+    { $group: { _id: "$winner", count: { $sum: 1 } } },
+    { $sort: { count: -1, _id: 1 } },
+  ]);
+  res.json({ wins: wins.map(({ _id, count }) => ({ player: _id, count })), matches: records });
+}));
 app.post("/api/game/join", auth, wrap(async (req, res) => {
   const game = await getMemoryGame();
   if (game.status === "finished") return res.status(409).json({ error: "This game is over. Start a rematch first." });
@@ -89,7 +100,7 @@ app.post("/api/game/join", auth, wrap(async (req, res) => {
     game.players.push(req.user.username);
     if (game.players.length === 2) {
       game.board = shuffledMemoryBoard(); game.matched = []; game.flipped = []; game.scores = [0, 0];
-      game.flipper = ""; game.matchPending = false; game.status = "playing"; game.turn = game.players[0];
+      game.flipper = ""; game.matchPending = false; game.status = "playing"; game.turn = game.players[0]; game.matchId = randomUUID();
     }
     await game.save();
   }
@@ -127,13 +138,14 @@ app.post("/api/game/resolve", auth, wrap(async (req, res) => {
   } else game.turn = game.players[1 - playerIndex];
   game.flipped = []; game.flipper = ""; game.matchPending = false;
   await game.save();
+  if (game.status === "finished") await GameHistory.updateOne({ matchId: game.matchId }, { $setOnInsert: { game: "memory", players: game.players, winner: game.winner } }, { upsert: true });
   res.json(gameView(game));
 }));
 app.post("/api/game/rematch", auth, wrap(async (req, res) => {
   const game = await getMemoryGame();
   if (game.status !== "finished") return res.status(409).json({ error: "Finish the game before starting a rematch." });
   if (!game.players.includes(req.user.username)) return res.status(403).json({ error: "Only a player can start a rematch." });
-  game.players = [req.user.username]; game.board = Array(24).fill(""); game.matched = []; game.flipped = [];
+  game.players = [req.user.username]; game.matchId = ""; game.board = Array(24).fill(""); game.matched = []; game.flipped = [];
   game.flipper = ""; game.matchPending = false; game.scores = [0, 0]; game.winner = ""; game.turn = ""; game.status = "waiting";
   await game.save();
   res.json(gameView(game));
@@ -149,7 +161,7 @@ app.post("/api/game/tic-tac-toe/join", auth, wrap(async (req, res) => {
   if (!room.players.includes(req.user.username)) {
     if (room.players.length >= 2) return res.status(409).json({ error: "This game already has two players." });
     room.players.push(req.user.username);
-    if (room.players.length === 2) { room.status = "playing"; room.turn = room.players[0]; }
+    if (room.players.length === 2) { room.status = "playing"; room.turn = room.players[0]; room.matchId = randomUUID(); }
     await room.save();
   }
   res.json(room);
@@ -164,12 +176,14 @@ app.post("/api/game/tic-tac-toe/move", auth, wrap(async (req, res) => {
   if (lines.some(([a,b,c]) => room.board[a] && room.board[a] === room.board[b] && room.board[b] === room.board[c])) { room.status = "finished"; room.winner = req.user.username; }
   else if (room.board.every(Boolean)) room.status = "finished";
   else room.turn = room.players.find((player) => player !== req.user.username);
-  await room.save(); res.json(room);
+  await room.save();
+  if (room.status === "finished") await GameHistory.updateOne({ matchId: room.matchId }, { $setOnInsert: { game: "tic-tac-toe", players: room.players, winner: room.winner } }, { upsert: true });
+  res.json(room);
 }));
 app.post("/api/game/tic-tac-toe/rematch", auth, wrap(async (req, res) => {
   const room = await getTicTacToe();
   if (room.status !== "finished" || !room.players.includes(req.user.username)) return res.status(409).json({ error: "A player must finish the game before a rematch." });
-  room.players = [req.user.username]; room.board = Array(9).fill(""); room.turn = ""; room.winner = ""; room.status = "waiting";
+  room.players = [req.user.username]; room.matchId = ""; room.board = Array(9).fill(""); room.turn = ""; room.winner = ""; room.status = "waiting";
   await room.save(); res.json(room);
 }));
 function crud(path, Model, fields, listFilter) {

@@ -37,6 +37,7 @@ export const api = {
   flipMemoryCard: (index) => req("/api/game/flip", "POST", { index }),
   resolveMemoryTurn: () => req("/api/game/resolve", "POST", {}),
   gameRematch: () => req("/api/game/rematch", "POST", {}),
+  gameHistory: (type) => req(`/api/game/history?type=${encodeURIComponent(type)}`),
   ticTacToe: () => req("/api/game/tic-tac-toe"),
   joinTicTacToe: () => req("/api/game/tic-tac-toe/join", "POST", {}),
   moveTicTacToe: (index) => req("/api/game/tic-tac-toe/move", "POST", { index }),

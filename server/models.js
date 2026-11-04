@@ -28,6 +28,7 @@ export const ChatPresence = models.ChatPresence || model("ChatPresence", new Sch
 
 export const GameRoom = models.GameRoom || model("GameRoom", new Schema({
   room: { type: String, default: "memory", unique: true },
+  matchId: { type: String, default: "" },
   players: { type: [String], default: [] },
   board: { type: [String], default: () => Array(24).fill("") },
   matched: { type: [Number], default: [] },
@@ -42,9 +43,17 @@ export const GameRoom = models.GameRoom || model("GameRoom", new Schema({
 
 export const TicTacToeRoom = models.TicTacToeRoom || model("TicTacToeRoom", new Schema({
   room: { type: String, default: "tic-tac-toe", unique: true },
+  matchId: { type: String, default: "" },
   players: { type: [String], default: [] },
   board: { type: [String], default: () => Array(9).fill("") },
   turn: { type: String, default: "" },
   winner: { type: String, default: "" },
   status: { type: String, enum: ["waiting", "playing", "finished"], default: "waiting" },
+}, { timestamps: true }));
+
+export const GameHistory = models.GameHistory || model("GameHistory", new Schema({
+  matchId: { type: String, required: true, unique: true },
+  game: { type: String, enum: ["memory", "tic-tac-toe"], required: true, index: true },
+  players: { type: [String], default: [] },
+  winner: { type: String, default: "" },
 }, { timestamps: true }));
