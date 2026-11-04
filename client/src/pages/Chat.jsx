@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+﻿import { useCallback, useEffect, useRef, useState } from "react";
 import { api, session } from "../api.js";
 
 export default function Chat() {
@@ -40,9 +40,9 @@ export default function Chat() {
     catch (e) { setError(e.message); setText(message); }
   }
   return <section className="chat-panel">
-    <div className="chat-heading"><div><h2 className="text-xl font-extrabold">Chat</h2><p className="text-sm text-ink/55">A shared conversation</p></div><span className="chat-live"><i /> Live</span></div>
+    <div className="chat-heading"><div><h2 className="text-xl font-extrabold">விளையாட்டு அரட்டை</h2><p className="text-sm text-ink/55">விளையாடிக்கொண்டே பேசுங்கள்</p></div><span className="chat-live"><i /> நேரலை</span></div>
     <div className="chat-messages" aria-live="polite">
-      {!messages.length && <p className="chat-empty">No messages yet. Say hello!</p>}
+      {!messages.length && <p className="chat-empty">இன்னும் செய்தி இல்லை. வணக்கம் சொல்லுங்கள்!</p>}
       {messages.map((message) => {
         const mine = message.sender === currentUser;
         return <div key={message._id} className={`chat-row ${mine ? "mine" : "theirs"}`}><div className="chat-bubble">
@@ -51,10 +51,10 @@ export default function Chat() {
           <time>{new Intl.DateTimeFormat("en-LK", { hour: "numeric", minute: "2-digit" }).format(new Date(message.createdAt))}</time>
         </div></div>;
       })}
-      {typing.length > 0 && <p className="chat-typing">{typing.join(", ")} {typing.length === 1 ? "is" : "are"} typing…</p>}
+      {typing.length > 0 && <p className="chat-typing">{typing.join(", ")} {typing.length === 1 ? "is" : "are"} typingâ€¦</p>}
       <div ref={endRef} />
     </div>
     {error && <p className="mb-2 px-4 text-sm text-red-600">{error}</p>}
-    <form className="chat-compose" onSubmit={send}><input className="field" placeholder="Write a message…" value={text} onChange={(e) => onChange(e.target.value)} maxLength={2000} aria-label="Message" /><button className="btn" disabled={!text.trim()}>Send</button></form>
+    <form className="chat-compose" onSubmit={send}><input className="field" placeholder="செய்தி எழுதுங்கள்â€¦" value={text} onChange={(e) => onChange(e.target.value)} maxLength={2000} aria-label="செய்தி" /><button className="btn" disabled={!text.trim()}>அனுப்பு</button></form>
   </section>;
 }

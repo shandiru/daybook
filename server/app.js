@@ -55,7 +55,7 @@ app.get("/api/chat/typing", auth, wrap(async (req, res) => {
   res.json(rows.map((row) => row.username));
 }));
 
-const memoryFaces = ["A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L"];
+const memoryFaces = ["🍎", "🍌", "🍇", "🍉", "🍍", "🥭", "🐘", "🦁", "🐒", "🦋", "🐢", "🐬"];
 const shuffledMemoryBoard = () => {
   const cards = [...memoryFaces, ...memoryFaces];
   for (let i = cards.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [cards[i], cards[j]] = [cards[j], cards[i]]; }
@@ -112,7 +112,7 @@ app.post("/api/game/flip", auth, wrap(async (req, res) => {
   if (game.status !== "playing") return res.status(409).json({ error: "The game is not ready for a move." });
   if (!game.players.includes(req.user.username)) return res.status(403).json({ error: "Join the game before playing." });
   if (game.turn !== req.user.username) return res.status(409).json({ error: "Wait for your turn." });
-  if (!Number.isInteger(index) || index < 0 || index >= 16 || game.matched.includes(index) || game.flipped.includes(index)) return res.status(400).json({ error: "That card is not available." });
+  if (!Number.isInteger(index) || index < 0 || index >= game.board.length || game.matched.includes(index) || game.flipped.includes(index)) return res.status(400).json({ error: "That card is not available." });
   if (game.flipped.length === 0) {
     game.flipped = [index]; game.flipper = req.user.username; game.matchPending = false;
   } else {
