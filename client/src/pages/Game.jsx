@@ -12,19 +12,9 @@ export default function Game() {
   const [chatOpen, setChatOpen] = useState(false);
   const [selectedGame, setSelectedGame] = useState("memory");
   const [hintBoard, setHintBoard] = useState(null);
-  const [hintSeconds, setHintSeconds] = useState(0);
+  const [hintOpen, setHintOpen] = useState(false);
   const previousStatus = useRef(null);
   const me = session.user?.name;
-  useEffect(() => {
-    if (!hintSeconds) return undefined;
-    const timer = setTimeout(() => {
-      setHintSeconds((seconds) => {
-        if (seconds <= 1) { setHintBoard(null); return 0; }
-        return seconds - 1;
-      });
-    }, 1000);
-    return () => clearTimeout(timer);
-  }, [hintSeconds]);
   const refresh = useCallback(async () => {
     try {
       const next = await api.game();
@@ -88,7 +78,7 @@ export default function Game() {
     <div className="game-status" aria-live="polite"><span className={`game-status-dot ${game?.status === "playing" ? "live" : ""}`} />{message}</div>
     <div className="memory-board" role="grid" aria-label="Memory match cards">
       {(game?.board?.length === 24 ? game.board : Array(24).fill("")).map((face, index) => {
-        const shownFace = hintSeconds > 0 ? hintBoard?.[index] : face;
+        const shownFace = hintOpen ? hintBoard?.[index] : face;
         const open = Boolean(shownFace);
         const matched = game?.matched?.includes(index);
         return <button key={index} role="gridcell" aria-label={open ? `Card ${index + 1}: ${shownFace}${matched ? ", matched" : ""}` : `Card ${index + 1}, face down`} className={`memory-card ${open ? "is-open" : ""} ${matched ? "is-matched" : ""}`} disabled={busy || !isTurn || open || game?.flipped?.length === 2} onClick={() => act(() => api.flipMemoryCard(index))}>{open ? shownFace : <span aria-hidden="true">?</span>}</button>;
@@ -96,8 +86,11 @@ export default function Game() {
     </div>
     {error && <p className="game-error" role="alert">{error}</p>}
     <div className="game-footer">
-      {me === "dirushan" && game?.status === "waiting" && !hintSeconds && <button className="btn game-action" disabled={busy} onClick={() => act(async () => { const result = await api.memoryHint(); setHintBoard(result.board); setHintSeconds(result.duration); return game; })}>Show all boxes for 60 seconds</button>}
-      {hintSeconds > 0 && <span className="game-you-play">Secret hint: {hintSeconds}s remaining</span>}
+      {me === "dirushan" && game?.status === "waiting" && <button className="btn game-action" disabled={busy} onClick={() => act(async () => {
+        if (!hintBoard) { const result = await api.memoryHint(); setHintBoard(result.board); }
+        setHintOpen((open) => !open);
+        return game;
+      })}>{hintOpen ? "Hide all boxes" : "Open all boxes"}</button>}
       {game?.status === "waiting" && !joined && <button className="btn game-action" disabled={busy} onClick={() => act(api.joinGame)}>{game.players?.length ? "Join the challenge" : "Start a game"}</button>}
       {game?.status === "waiting" && joined && <span className="game-you-play">Youâ€™re in â€” player 2 can join now.</span>}
       {game?.status === "playing" && joined && <span className="game-you-play">{isTurn ? "Your turn" : "Your opponent's turn"} - collect matching pairs</span>}
