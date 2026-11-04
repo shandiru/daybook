@@ -37,8 +37,8 @@ app.post("/api/auth/login", (req, res) => {
   res.json({ token: jwt.sign({ username }, process.env.JWT_SECRET, { expiresIn: "365d" }), user: { name: username } });
 });
 
-const chatChannel = (value) => value === "ludo" ? "ludo" : "general";
-const chatChannelFilter = (channel) => channel === "ludo" ? { channel: "ludo" } : { channel: { $in: ["general", null] } };
+const chatChannel = () => "general";
+const chatChannelFilter = () => ({ channel: { $in: ["general", null] } });
 app.get("/api/chat", auth, wrap(async (req, res) => {
   res.json(await ChatMessage.find(chatChannelFilter(chatChannel(req.query.channel))).sort({ createdAt: 1 }).limit(300));
 }));
@@ -49,7 +49,7 @@ app.post("/api/chat", auth, wrap(async (req, res) => {
 }));
 app.get("/api/chat/unread", auth, wrap(async (req, res) => {
   const rows = await ChatMessage.find({ sender: { $ne: req.user.username }, seenBy: { $ne: req.user.username } }).sort({ createdAt: -1 }).lean();
-  const counts = { general: 0, ludo: 0 };
+  const counts = { general: 0 };
   rows.forEach((message) => { counts[chatChannel(message.channel)] += 1; });
   res.json({ counts, latest: rows[0] || null });
 }));

@@ -44,7 +44,7 @@ export default function Chat({ compact = false, channel = "general" }) {
     catch (e) { setError(e.message); setText(message); }
   }
   return <section className={`chat-panel ${compact ? "chat-panel-compact" : ""}`}>
-    <div className="chat-heading"><div><h2 className="text-xl font-extrabold">{channel === "ludo" ? "Ludo Chat" : compact ? "Game Chat" : "Chat"}</h2><p className="text-sm text-ink/55">A shared conversation</p></div><span className="chat-live"><i /> Live</span></div>
+    <div className="chat-heading"><div><h2 className="text-xl font-extrabold">Chat</h2><p className="text-sm text-ink/55">The same shared conversation</p></div><span className="chat-live"><i /> Live</span></div>
     <div className="chat-messages" aria-live="polite">
       {!messages.length && <p className="chat-empty">No messages yet. Say hello!</p>}
       {messages.map((message) => {

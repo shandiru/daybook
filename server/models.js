@@ -19,14 +19,14 @@ export const Expense = models.Expense || model("Expense", new Schema({
 export const ChatMessage = models.ChatMessage || model("ChatMessage", new Schema({
   sender: { type: String, required: true, index: true },
   text: { type: String, required: true, trim: true, maxlength: 2000 },
-  channel: { type: String, enum: ["general", "ludo"], default: "general", index: true },
+  channel: { type: String, enum: ["general"], default: "general", index: true },
   seenBy: { type: [String], default: [] },
 }, { timestamps: true }));
 
 export const ChatPresence = models.ChatPresence || model("ChatPresence", new Schema({
   username: { type: String, required: true, unique: true },
   typingUntil: { type: Date, default: null },
-  channel: { type: String, enum: ["general", "ludo"], default: "general" },
+  channel: { type: String, enum: ["general"], default: "general" },
 }, { timestamps: true }));
 
 export const GameRoom = models.GameRoom || model("GameRoom", new Schema({
