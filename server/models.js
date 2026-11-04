@@ -29,6 +29,15 @@ export const ChatPresence = models.ChatPresence || model("ChatPresence", new Sch
   channel: { type: String, enum: ["general"], default: "general" },
 }, { timestamps: true }));
 
+export const PushSubscription = models.PushSubscription || model("PushSubscription", new Schema({
+  username: { type: String, required: true, index: true },
+  endpoint: { type: String, required: true, unique: true },
+  keys: {
+    p256dh: { type: String, required: true },
+    auth: { type: String, required: true },
+  },
+}, { timestamps: true }));
+
 export const GameRoom = models.GameRoom || model("GameRoom", new Schema({
   room: { type: String, default: "memory", unique: true },
   matchId: { type: String, default: "" },

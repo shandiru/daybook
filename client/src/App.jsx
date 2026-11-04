@@ -5,6 +5,7 @@ import Tasks from "./pages/Tasks.jsx";
 import Expenses from "./pages/Expenses.jsx";
 import Chat from "./pages/Chat.jsx";
 import Game from "./pages/Game.jsx";
+import { canUsePushNotifications, enablePushNotifications, syncPushSubscription } from "./pushNotifications.js";
 
 function AppIcon({ name, size = 22 }) {
   const paths = {
@@ -19,8 +20,10 @@ function AppIcon({ name, size = 22 }) {
 
 export default function App() {
   const [user, setUser] = useState(session.user);
-  const [tab, setTab] = useState("tasks");
+  const requestedTab = new URLSearchParams(window.location.search).get("tab");
+  const [tab, setTab] = useState(["tasks", "money", "chat", "game"].includes(requestedTab) ? requestedTab : "tasks");
   const [installPrompt, setInstallPrompt] = useState(null);
+  const [pushState, setPushState] = useState(() => typeof Notification !== "undefined" ? Notification.permission : "unsupported");
   const [online, setOnline] = useState(navigator.onLine);
   const [unread, setUnread] = useState({ general: 0 });
   const [toast, setToast] = useState(null);
@@ -35,7 +38,7 @@ export default function App() {
         const channelName = "Chat";
         setToast({ title: `${result.latest.sender} · ${channelName}`, text: result.latest.text });
         window.setTimeout(() => setToast(null), 4500);
-        if (document.visibilityState !== "visible" && typeof Notification !== "undefined" && Notification.permission === "granted") new Notification(`${result.latest.sender} sent a message`, { body: result.latest.text, icon: "/icon-192.png", tag: `chat-${result.latest._id}` });
+        if (document.visibilityState !== "visible" && !localStorage.getItem("push-enabled") && typeof Notification !== "undefined" && Notification.permission === "granted") new Notification(`${result.latest.sender} sent a message`, { body: result.latest.text, icon: "/icon-192.png", tag: `chat-${result.latest._id}` });
       }
       latestMessage.current = result.latest?._id || null;
     } catch { /* Keep the current badge when temporarily offline. */ }
@@ -53,6 +56,36 @@ export default function App() {
       window.removeEventListener("offline", onlineChange);
     };
   }, []);
+
+  useEffect(() => {
+    if (!user || !canUsePushNotifications() || Notification.permission !== "granted") return;
+    syncPushSubscription()
+      .then((active) => setPushState(active ? "enabled" : "granted"))
+      .catch(() => setPushState("granted"));
+  }, [user]);
+
+  const turnOnNotifications = async () => {
+    setPushState("loading");
+    try {
+      await enablePushNotifications();
+      setPushState("enabled");
+      setToast({ title: "Notifications are on", text: "New chat messages can now appear even when Daybook is closed." });
+    } catch (error) {
+      setPushState(typeof Notification !== "undefined" ? Notification.permission : "unsupported");
+      setToast({ title: "Could not enable notifications", text: error.message });
+    }
+    window.setTimeout(() => setToast(null), 5000);
+  };
+
+  const installApp = async () => {
+    if (installPrompt) {
+      await installPrompt.prompt();
+      setInstallPrompt(null);
+      return;
+    }
+    setToast({ title: "Install Daybook", text: "On iPhone: tap Share, then Add to Home Screen. On Android: open the browser menu and tap Install app." });
+    window.setTimeout(() => setToast(null), 7000);
+  };
 
   useEffect(() => {
     if (!user) return undefined;
@@ -75,8 +108,8 @@ export default function App() {
           </div>
           <div className="flex items-center gap-2">
             <span className={`status-pill ${online ? "is-online" : "is-offline"}`}><span className="status-dot" />{online ? "Online" : "Offline"}</span>
-            {typeof Notification !== "undefined" && Notification.permission !== "granted" && <button className="notification-button" title="Enable message notifications" aria-label="Enable message notifications" onClick={() => Notification.requestPermission().then(() => refreshUnread())}><AppIcon name="bell" size={18} /></button>}
-            {installPrompt && <button className="install-button" onClick={async () => { await installPrompt.prompt(); setInstallPrompt(null); }}>Install</button>}
+            {canUsePushNotifications() && pushState !== "enabled" && <button className="notification-button" title="Enable message notifications" aria-label="Enable message notifications" disabled={pushState === "loading"} onClick={turnOnNotifications}><AppIcon name="bell" size={18} /></button>}
+            {!window.matchMedia("(display-mode: standalone)").matches && !window.navigator.standalone && <button className="install-button" onClick={installApp}>Install</button>}
             <button className="avatar-button" title={`Log out ${user.name}`} onClick={() => { session.clear(); setUser(null); }}>{(user.name || "U").charAt(0).toUpperCase()}</button>
           </div>
         </div>

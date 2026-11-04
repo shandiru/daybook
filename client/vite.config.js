@@ -24,6 +24,8 @@ export default defineConfig({
         ],
       },
       workbox: {
+        importScripts: ["sw-push.js"],
+        navigateFallback: "/index.html",
         runtimeCaching: [{
           urlPattern: ({ url }) => url.origin === "https://fonts.googleapis.com" || url.origin === "https://fonts.gstatic.com",
           handler: "CacheFirst",
