@@ -172,23 +172,44 @@ app.post("/api/game/rematch", auth, wrap(async (req, res) => {
   res.json(gameView(game));
 }));
 
+const LUDO_BOARD_VERSION = 2;
+const LUDO_TRACK_LENGTH = 52;
+const LUDO_HOME = 57;
+const LUDO_OFFSETS = [0, 26];
+const LUDO_SAFE_SQUARES = new Set([0, 8, 13, 21, 26, 34, 39, 47]);
 const freshLudoPositions = () => [Array(4).fill(-1), Array(4).fill(-1)];
-const getLudo = () => LudoRoom.findOneAndUpdate({ room: "ludo" }, { $setOnInsert: { room: "ludo" } }, { upsert: true, new: true, setDefaultsOnInsert: true });
-const ludoLegalMoves = (room, playerIndex, dice) => room.positions[playerIndex]
+const getLudo = async () => {
+  const room = await LudoRoom.findOneAndUpdate({ room: "ludo" }, { $setOnInsert: { room: "ludo" } }, { upsert: true, new: true, setDefaultsOnInsert: true });
+  if (room.boardVersion !== LUDO_BOARD_VERSION) {
+    room.boardVersion = LUDO_BOARD_VERSION;
+    room.positions = freshLudoPositions(); room.dice = 0; room.lastRoll = 0; room.consecutiveSixes = 0; room.winner = "";
+    if (room.players.length === 2) { room.status = "playing"; room.turn = room.players[0]; room.matchId = randomUUID(); }
+    else { room.status = "waiting"; room.turn = ""; room.matchId = ""; }
+    await room.save();
+  }
+  return room;
+};
+const ludoLegalMoves = (room, playerIndex, dice) => (room.positions[playerIndex] || [])
   .map((position, token) => ({ position, token }))
-  .filter(({ position }) => (position === -1 ? dice === 6 : position < 28 && position + dice <= 28))
+  .filter(({ position }) => (position === -1 ? dice === 6 : position < LUDO_HOME && position + dice <= LUDO_HOME))
   .map(({ token }) => token);
-app.get("/api/game/ludo", auth, wrap(async (_req, res) => res.json(await getLudo())));
+const ludoView = (room) => {
+  const view = room.toObject ? room.toObject() : { ...room };
+  const playerIndex = view.players.indexOf(view.turn);
+  view.legalMoves = view.dice && playerIndex >= 0 ? ludoLegalMoves(view, playerIndex, view.dice) : [];
+  return view;
+};
+app.get("/api/game/ludo", auth, wrap(async (_req, res) => res.json(ludoView(await getLudo()))));
 app.post("/api/game/ludo/join", auth, wrap(async (req, res) => {
   const room = await getLudo();
   if (room.status === "finished") return res.status(409).json({ error: "This game is over. Start a rematch first." });
   if (!room.players.includes(req.user.username)) {
     if (room.players.length >= 2) return res.status(409).json({ error: "This game already has two players." });
     room.players.push(req.user.username);
-    if (room.players.length === 2) { room.positions = freshLudoPositions(); room.status = "playing"; room.turn = room.players[0]; room.dice = 0; room.matchId = randomUUID(); }
+    if (room.players.length === 2) { room.positions = freshLudoPositions(); room.status = "playing"; room.turn = room.players[0]; room.dice = 0; room.lastRoll = 0; room.consecutiveSixes = 0; room.matchId = randomUUID(); }
     await room.save();
   }
-  res.json(room);
+  res.json(ludoView(room));
 }));
 app.post("/api/game/ludo/roll", auth, wrap(async (req, res) => {
   const room = await getLudo();
@@ -196,8 +217,16 @@ app.post("/api/game/ludo/roll", auth, wrap(async (req, res) => {
   if (room.dice) return res.status(409).json({ error: "Move a piece before rolling again." });
   const playerIndex = room.players.indexOf(req.user.username);
   room.dice = Math.floor(Math.random() * 6) + 1;
-  if (!ludoLegalMoves(room, playerIndex, room.dice).length) { room.dice = 0; room.turn = room.players[1 - playerIndex]; }
-  await room.save(); res.json(room);
+  room.lastRoll = room.dice;
+  room.consecutiveSixes = room.dice === 6 ? room.consecutiveSixes + 1 : 0;
+  if (room.consecutiveSixes >= 3) {
+    room.dice = 0; room.consecutiveSixes = 0; room.turn = room.players[1 - playerIndex];
+  } else if (!ludoLegalMoves(room, playerIndex, room.dice).length) {
+    const rolledSix = room.dice === 6;
+    room.dice = 0;
+    if (!rolledSix) room.turn = room.players[1 - playerIndex];
+  }
+  await room.save(); res.json(ludoView(room));
 }));
 app.post("/api/game/ludo/move", auth, wrap(async (req, res) => {
   const room = await getLudo();
@@ -209,27 +238,27 @@ app.post("/api/game/ludo/move", auth, wrap(async (req, res) => {
   positions[playerIndex][token] = positions[playerIndex][token] === -1 ? 0 : positions[playerIndex][token] + room.dice;
   let captured = false;
   const moved = positions[playerIndex][token];
-  if (moved < 28) {
-    const absolute = (moved + playerIndex * 14) % 28;
-    const safe = [0, 7, 14, 21].includes(absolute);
+  if (moved < LUDO_TRACK_LENGTH) {
+    const absolute = (moved + LUDO_OFFSETS[playerIndex]) % LUDO_TRACK_LENGTH;
+    const safe = LUDO_SAFE_SQUARES.has(absolute);
     if (!safe) positions[1 - playerIndex] = positions[1 - playerIndex].map((position) => {
-      if (position >= 0 && position < 28 && (position + (1 - playerIndex) * 14) % 28 === absolute) { captured = true; return -1; }
+      if (position >= 0 && position < LUDO_TRACK_LENGTH && (position + LUDO_OFFSETS[1 - playerIndex]) % LUDO_TRACK_LENGTH === absolute) { captured = true; return -1; }
       return position;
     });
   }
   const rolledSix = room.dice === 6;
   room.positions = positions; room.dice = 0;
-  if (positions[playerIndex].every((position) => position === 28)) { room.status = "finished"; room.winner = req.user.username; }
-  else if (!rolledSix && !captured) room.turn = room.players[1 - playerIndex];
+  if (positions[playerIndex].every((position) => position === LUDO_HOME)) { room.status = "finished"; room.winner = req.user.username; room.consecutiveSixes = 0; }
+  else if (!rolledSix && !captured) { room.turn = room.players[1 - playerIndex]; room.consecutiveSixes = 0; }
   await room.save();
   if (room.status === "finished") await GameHistory.updateOne({ matchId: room.matchId }, { $setOnInsert: { game: "ludo", players: room.players, winner: room.winner } }, { upsert: true });
-  res.json(room);
+  res.json(ludoView(room));
 }));
 app.post("/api/game/ludo/rematch", auth, wrap(async (req, res) => {
   const room = await getLudo();
   if (room.status !== "finished" || !room.players.includes(req.user.username)) return res.status(409).json({ error: "A player must finish the game before a rematch." });
-  room.players = [req.user.username]; room.matchId = ""; room.positions = freshLudoPositions(); room.turn = ""; room.dice = 0; room.winner = ""; room.status = "waiting";
-  await room.save(); res.json(room);
+  room.players = [req.user.username]; room.matchId = ""; room.positions = freshLudoPositions(); room.turn = ""; room.dice = 0; room.lastRoll = 0; room.consecutiveSixes = 0; room.winner = ""; room.status = "waiting";
+  await room.save(); res.json(ludoView(room));
 }));
 function crud(path, Model, fields, listFilter) {
   const pick = (b) => Object.fromEntries(fields.filter((f) => b[f] !== undefined).map((f) => [f, b[f]]));

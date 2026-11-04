@@ -46,11 +46,14 @@ export const GameRoom = models.GameRoom || model("GameRoom", new Schema({
 
 export const LudoRoom = models.LudoRoom || model("LudoRoom", new Schema({
   room: { type: String, default: "ludo", unique: true },
+  boardVersion: { type: Number, default: 1 },
   matchId: { type: String, default: "" },
   players: { type: [String], default: [] },
   positions: { type: Schema.Types.Mixed, default: () => [Array(4).fill(-1), Array(4).fill(-1)] },
   turn: { type: String, default: "" },
   dice: { type: Number, default: 0 },
+  lastRoll: { type: Number, default: 0 },
+  consecutiveSixes: { type: Number, default: 0 },
   winner: { type: String, default: "" },
   status: { type: String, enum: ["waiting", "playing", "finished"], default: "waiting" },
 }, { timestamps: true }));

@@ -6,6 +6,17 @@ import Expenses from "./pages/Expenses.jsx";
 import Chat from "./pages/Chat.jsx";
 import Game from "./pages/Game.jsx";
 
+function AppIcon({ name, size = 22 }) {
+  const paths = {
+    tasks: <><path d="M9 5h10M9 12h10M9 19h10" /><path d="m3 5 1.5 1.5L7 4M3 12l1.5 1.5L7 11M3 19l1.5 1.5L7 18" /></>,
+    money: <><rect x="3" y="5" width="18" height="14" rx="2" /><path d="M3 9h18M7 15h3" /></>,
+    chat: <><path d="M20 15a3 3 0 0 1-3 3H9l-5 3v-3a3 3 0 0 1-2-3V7a3 3 0 0 1 3-3h12a3 3 0 0 1 3 3Z" /><path d="M7 9h10M7 13h6" /></>,
+    game: <><path d="M8.5 8h7a5.5 5.5 0 0 1 5.2 7.3l-.8 2.4a2 2 0 0 1-3.3.8L14 16h-4l-2.6 2.5a2 2 0 0 1-3.3-.8l-.8-2.4A5.5 5.5 0 0 1 8.5 8Z" /><path d="M8 11v4M6 13h4M16.5 12.5h.01M18.5 14.5h.01" /></>,
+    bell: <><path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9M10 21h4" /></>,
+  };
+  return <svg className="app-icon" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">{paths[name]}</svg>;
+}
+
 export default function App() {
   const [user, setUser] = useState(session.user);
   const [tab, setTab] = useState("tasks");
@@ -64,7 +75,7 @@ export default function App() {
           </div>
           <div className="flex items-center gap-2">
             <span className={`status-pill ${online ? "is-online" : "is-offline"}`}><span className="status-dot" />{online ? "Online" : "Offline"}</span>
-            {typeof Notification !== "undefined" && Notification.permission !== "granted" && <button className="notification-button" title="Enable message notifications" onClick={() => Notification.requestPermission().then(() => refreshUnread())}>🔔</button>}
+            {typeof Notification !== "undefined" && Notification.permission !== "granted" && <button className="notification-button" title="Enable message notifications" aria-label="Enable message notifications" onClick={() => Notification.requestPermission().then(() => refreshUnread())}><AppIcon name="bell" size={18} /></button>}
             {installPrompt && <button className="install-button" onClick={async () => { await installPrompt.prompt(); setInstallPrompt(null); }}>Install</button>}
             <button className="avatar-button" title={`Log out ${user.name}`} onClick={() => { session.clear(); setUser(null); }}>{(user.name || "U").charAt(0).toUpperCase()}</button>
           </div>
@@ -78,7 +89,7 @@ export default function App() {
 
       <nav className="bottom-nav fixed inset-x-0 bottom-0" style={{ paddingBottom: "env(safe-area-inset-bottom)" }}>
         <div className="mx-auto grid max-w-2xl grid-cols-4 px-5 py-2 sm:px-8">
-          {tabs.map(([key, label]) => { const count = key === "chat" ? unread.general : 0; return <button key={key} onClick={() => setTab(key)} className={`nav-item ${tab === key ? "active" : ""}`}><span>{label}</span>{count > 0 && <b className="nav-badge">{count > 99 ? "99+" : count}</b>}</button>; })}
+          {tabs.map(([key, label]) => { const count = key === "chat" ? unread.general : 0; return <button key={key} onClick={() => setTab(key)} className={`nav-item ${tab === key ? "active" : ""}`} aria-current={tab === key ? "page" : undefined}><span className="nav-icon-wrap"><AppIcon name={key} />{count > 0 && <b className="nav-badge">{count > 99 ? "99+" : count}</b>}</span><span className="nav-label">{label}</span></button>; })}
         </div>
       </nav>
     </div>

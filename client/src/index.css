@@ -15,11 +15,15 @@ button:active { transform: scale(.98); }
 .is-offline .status-dot { background: #d18a24; }
 .install-button { border-radius: 999px; background: #d9efeb; padding: 8px 12px; color: #075d5b; font-size: .75rem; font-weight: 800; }
 .avatar-button { display: grid; width: 34px; height: 34px; place-items: center; border: 0; border-radius: 50%; background: #e6e9e5; color: #405553; font-size: .8rem; font-weight: 800; }
-.bottom-nav { z-index: 10; border-top: 1px solid #e4eae7; background: rgb(255 255 255 / 94%); backdrop-filter: blur(18px); }
-.nav-item { position: relative; display: flex; min-height: 48px; flex-direction: column; align-items: center; justify-content: center; gap: 3px; border: 0; background: transparent; padding: 8px; color: #84918e; font-size: .7rem; font-weight: 700; }
-.nav-item.active { color: #0e7c7b; }
-.nav-badge { position: absolute; top: 3px; left: calc(50% + 20px); min-width: 18px; border-radius: 999px; background: #db4b4b; padding: 2px 5px; color: white; font-size: .6rem; line-height: 1.3; box-shadow: 0 2px 6px #76262635; }
-.notification-button { display: grid; width: 36px; height: 36px; place-items: center; border: 1px solid #dce6e2; border-radius: 50%; background: white; font-size: .9rem; }
+.bottom-nav { z-index: 10; border-top: 1px solid #dce5e1; background: rgb(255 255 255 / 96%); box-shadow: 0 -8px 26px #143b320d; backdrop-filter: blur(18px); }
+.nav-item { position: relative; display: flex; min-height: 58px; flex-direction: column; align-items: center; justify-content: center; gap: 4px; border: 0; border-radius: 16px; background: transparent; padding: 6px 8px; color: #778984; font-size: .68rem; font-weight: 750; }
+.nav-item.active { background: #e8f5f1; color: #08706e; }
+.nav-icon-wrap { position: relative; display: grid; width: 28px; height: 25px; place-items: center; }
+.nav-item .app-icon { transition: transform 160ms ease, stroke-width 160ms ease; }
+.nav-item.active .app-icon { transform: translateY(-1px); stroke-width: 2.3; }
+.nav-label { line-height: 1; }
+.nav-badge { position: absolute; top: -5px; right: -10px; min-width: 18px; border: 2px solid white; border-radius: 999px; background: #db4b4b; padding: 1px 4px; color: white; font-size: .56rem; line-height: 1.3; box-shadow: 0 2px 6px #76262635; }
+.notification-button { display: grid; width: 36px; height: 36px; place-items: center; border: 1px solid #dce6e2; border-radius: 50%; background: white; color: #405553; }
 .message-toast { position: fixed; z-index: 50; top: max(16px, env(safe-area-inset-top)); right: 16px; display: flex; width: min(360px, calc(100vw - 32px)); flex-direction: column; gap: 3px; border: 1px solid #cfe4dc; border-radius: 16px; background: #fffffff5; padding: 13px 16px; color: #263b38; text-align: left; box-shadow: 0 14px 45px #143b3230; backdrop-filter: blur(14px); animation: win-pop 240ms ease-out both; }
 .message-toast strong { color: #0e7c7b; font-size: .78rem; }
 .message-toast span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: .84rem; }
@@ -68,30 +72,86 @@ button:active { transform: scale(.98); }
 .memory-card.is-open { transform: scale(1.03); border-color: #e8e5d8; background: #fffdf5; color: #334c46; font-size: clamp(1.5rem, 6vw, 3.5rem); }
 .memory-card.is-matched { border-color: #b8e1d2; background: #e6f6ef; box-shadow: inset 0 0 0 2px #c8eadc; cursor: default; }
 .memory-card:disabled:not(.is-open):not(.is-matched) { cursor: default; opacity: .86; }
-.ludo-board { position: relative; display: grid; width: min(100% - 28px, 520px); aspect-ratio: 1; grid-template: repeat(8, 1fr) / repeat(8, 1fr); gap: 3px; margin: 0 auto; border: 5px solid #f4f7f5; border-radius: 24px; background: #dfe8e4; overflow: hidden; box-shadow: inset 0 0 0 1px #d1ddd8; }
-.ludo-track { position: relative; display: grid; min-width: 0; min-height: 0; place-items: center; background: white; }
-.ludo-track.safe { background: #e9f5f0; color: #13816d; }
-.ludo-track > small { position: absolute; color: #6cae9b; font-size: clamp(.45rem, 2vw, .7rem); }
-.ludo-stack { position: relative; z-index: 1; display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 1px; }
-.ludo-piece { display: grid; width: clamp(17px, 5.5vw, 29px); height: clamp(17px, 5.5vw, 29px); place-items: center; border: 2px solid white; border-radius: 50%; color: white; font-size: clamp(.5rem, 2.3vw, .7rem); font-weight: 900; line-height: 1; box-shadow: 0 2px 6px #173a3035; }
-.ludo-green { background: #159878; }
-.ludo-orange { background: #e38a32; }
-.ludo-green-soft { background: #e4f5ef; color: #147760; }
-.ludo-orange-soft { background: #fff0df; color: #9b5b1c; }
+.ludo-game-panel { background: linear-gradient(180deg, #fff 0, #fbfcfb 100%); }
+.ludo-heading { padding-bottom: 14px; }
+.ludo-scorebar { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin: 0 18px; }
+.ludo-player-card { position: relative; display: flex; min-width: 0; align-items: center; gap: 9px; border: 1px solid #e6ebe8; border-radius: 16px; background: #fff; padding: 9px; box-shadow: 0 3px 12px #143b3208; }
+.ludo-player-card > span:nth-child(2) { min-width: 0; }
+.ludo-player-card strong, .ludo-player-card small { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ludo-player-card strong { color: #263b38; font-size: .76rem; }
+.ludo-player-card small { margin-top: 2px; color: #84918e; font-size: .64rem; }
+.ludo-player-card.green.active { border-color: #20a56f; background: #effaf5; box-shadow: 0 0 0 2px #20a56f18; }
+.ludo-player-card.yellow.active { border-color: #e0aa13; background: #fff9df; box-shadow: 0 0 0 2px #e0aa1318; }
+.turn-flag { position: absolute; top: -7px; right: 8px; border-radius: 999px; background: #173a30; padding: 2px 6px; color: #fff; font-size: .48rem; font-style: normal; font-weight: 900; letter-spacing: .08em; }
+.memory-avatar.ludo-green { background: #18a866; }
+.memory-avatar.ludo-yellow { background: #e3ad16; color: #4c3900; }
+.ludo-play-area { display: grid; grid-template-columns: minmax(0, 1fr) 116px; gap: 14px; align-items: center; padding: 0 18px; }
+.classic-ludo-board { position: relative; display: grid; width: 100%; aspect-ratio: 1; grid-template: repeat(15, 1fr) / repeat(15, 1fr); overflow: hidden; border: 3px solid #263b38; border-radius: 8px; background: #fff; box-shadow: 0 10px 28px #143b3220; }
+.ludo-home-base { z-index: 0; display: grid; place-items: center; padding: 13%; }
+.base-green { grid-area: 1 / 1 / 7 / 7; background: #20b46e; }
+.base-red { grid-area: 1 / 10 / 7 / 16; background: #ed5a58; }
+.base-blue { grid-area: 10 / 1 / 16 / 7; background: #3794df; }
+.base-yellow { grid-area: 10 / 10 / 16 / 16; background: #f1c52e; }
+.yard-inner { display: grid; width: 100%; height: 100%; grid-template: repeat(2, 1fr) / repeat(2, 1fr); gap: 12%; border: 2px solid #ffffffb8; border-radius: 12%; background: #fff; padding: 14%; box-shadow: inset 0 2px 8px #173a3018; }
+.yard-spot, .decorative-yard span { display: grid; aspect-ratio: 1; place-items: center; border: 2px solid #dbe4df; border-radius: 50%; background: #f7faf8; }
+.base-green .yard-spot { border-color: #55c88f; background: #e6f7ee; }
+.base-yellow .yard-spot { border-color: #ebc84f; background: #fff7d8; }
+.decorative-yard span { opacity: .45; }
+.classic-cell { position: relative; z-index: 2; display: grid; min-width: 0; min-height: 0; place-items: center; border-right: 1px solid #9caaa4; border-bottom: 1px solid #9caaa4; background: #fff; }
+.safe-cell { background: #f1f4f2; }
+.start-green, .lane-green { background: #49c982; }
+.start-red { background: #ef716f; }
+.start-yellow, .lane-yellow { background: #f4ce43; }
+.start-blue { background: #56a8e9; }
+.safe-star { position: absolute; z-index: 0; color: #365049; font-size: clamp(.35rem, 1.45vw, .74rem); line-height: 1; opacity: .68; }
+.ludo-stack { position: absolute; z-index: 3; inset: 0; display: flex; flex-wrap: wrap; align-content: center; align-items: center; justify-content: center; gap: 0; }
+.ludo-piece { position: relative; display: grid; width: 72%; max-width: 29px; aspect-ratio: 1; flex: 0 0 auto; place-items: center; border: 2px solid #fff; border-radius: 50%; padding: 0; box-shadow: 0 2px 5px #173a3050, inset 0 -3px 3px #0002, inset 0 2px 2px #fff6; }
+.ludo-piece span { width: 34%; height: 34%; border-radius: 50%; background: #fff6; box-shadow: inset 0 1px 2px #0002; }
+.ludo-green { background: #119454; }
+.ludo-yellow { background: #e2a900; }
 .ludo-piece:disabled { opacity: 1; }
-.ludo-piece.can-move { cursor: pointer; animation: ludo-pulse 800ms ease-in-out infinite alternate; box-shadow: 0 0 0 3px #ffdc62, 0 4px 10px #173a3045; }
-.ludo-center { grid-area: 2 / 2 / 8 / 8; display: grid; grid-template-columns: 1fr .8fr 1fr; align-items: stretch; gap: 6px; padding: clamp(7px, 2.5vw, 16px); background: #f9fbfa; }
-.ludo-yard { display: flex; min-width: 0; flex-direction: column; align-items: center; justify-content: center; gap: 10px; border-radius: 18px; padding: 8px 4px; }
-.ludo-yard strong { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: clamp(.55rem, 2.4vw, .78rem); }
-.ludo-yard > div { display: grid; grid-template-columns: repeat(2, auto); gap: 5px; min-height: 50px; }
-.ludo-dice-area { display: flex; min-width: 0; flex-direction: column; align-items: center; justify-content: center; gap: 9px; }
-.ludo-dice-area .btn { width: 100%; padding: 9px 5px; font-size: clamp(.58rem, 2.4vw, .75rem); }
-.ludo-die { display: grid; width: clamp(42px, 12vw, 66px); aspect-ratio: 1; place-items: center; border: 2px solid #0e7c7b; border-radius: 15px; background: white; color: #0e7c7b; font-size: clamp(1.4rem, 6vw, 2.1rem); font-weight: 950; box-shadow: 0 5px 16px #143b3220; }
-.ludo-home-row { display: flex; justify-content: center; gap: 8px; padding: 10px 16px 0; }
-.ludo-home-row span { border-radius: 999px; padding: 6px 10px; font-size: .66rem; font-weight: 800; }
-.memory-avatar.ludo-green { background: #159878; }
-.memory-avatar.ludo-orange { background: #e38a32; }
-@keyframes ludo-pulse { to { transform: translateY(-3px) scale(1.08); } }
+.ludo-piece.can-move { z-index: 5; cursor: pointer; animation: ludo-pulse 700ms ease-in-out infinite alternate; box-shadow: 0 0 0 3px #fff, 0 0 0 6px #f05b56, 0 5px 9px #173a3050; }
+.ludo-stack.count-2 .ludo-piece, .ludo-stack.count-3 .ludo-piece, .ludo-stack.count-4 .ludo-piece { width: 48%; border-width: 1px; }
+.ludo-finish { position: relative; z-index: 1; grid-area: 7 / 7 / 10 / 10; overflow: hidden; background: conic-gradient(from 45deg, #ed5a58 0 25%, #f1c52e 0 50%, #3794df 0 75%, #20b46e 0); }
+.ludo-finish .finish-label { position: absolute; z-index: 2; inset: 50% auto auto 50%; transform: translate(-50%, -50%); border-radius: 999px; background: #fff; padding: 3px 5px; color: #334c46; font-size: clamp(.28rem, 1.2vw, .5rem); font-weight: 950; letter-spacing: .04em; box-shadow: 0 1px 5px #173a3040; }
+.finish-pieces { position: absolute; z-index: 3; inset: 6%; display: flex; flex-wrap: wrap; align-content: center; justify-content: center; }
+.finish-pieces .ludo-piece { width: 32%; }
+.ludo-controls { display: flex; min-width: 0; flex-direction: column; align-items: center; gap: 10px; }
+.control-label { color: #71817c; font-size: .62rem; font-weight: 900; letter-spacing: .12em; }
+.ludo-die { position: relative; display: grid; width: 66px; aspect-ratio: 1; grid-template: repeat(3, 1fr) / repeat(3, 1fr); place-items: center; border: 2px solid #173a30; border-radius: 16px; background: #fff; color: #173a30; box-shadow: 0 7px 17px #143b3225; }
+.ludo-die b { position: absolute; inset: 0; display: grid; place-items: center; font-size: 1.6rem; }
+.ludo-die.is-rolling { animation: dice-roll 420ms ease-in-out; }
+.pip { display: none; width: 10px; height: 10px; border-radius: 50%; background: #173a30; }
+.pip-1-4, .pip-2-0, .pip-2-8, .pip-3-0, .pip-3-4, .pip-3-8, .pip-4-0, .pip-4-2, .pip-4-6, .pip-4-8, .pip-5-0, .pip-5-2, .pip-5-4, .pip-5-6, .pip-5-8, .pip-6-0, .pip-6-2, .pip-6-3, .pip-6-5, .pip-6-6, .pip-6-8 { display: block; }
+.ludo-roll-button { width: 100%; border-radius: 13px; padding: 10px 7px; font-size: .72rem; }
+.ludo-rule-tip { display: flex; align-items: center; gap: 7px; border: 1px solid #e1e8e4; border-radius: 12px; background: #fff; padding: 8px; }
+.ludo-rule-tip > span { color: #e0aa13; font-size: 1.05rem; }
+.ludo-rule-tip p { color: #71817c; font-size: .55rem; line-height: 1.3; }
+.ludo-rule-tip strong { display: block; color: #405553; font-size: .58rem; }
+.ludo-mini-progress { display: flex; gap: 8px; }
+.ludo-mini-progress > div { display: grid; grid-template-columns: auto auto; align-items: center; gap: 1px 4px; }
+.ludo-mini-progress .dot { width: 7px; height: 7px; border-radius: 50%; }
+.ludo-mini-progress .dot.green { background: #18a866; }
+.ludo-mini-progress .dot.yellow { background: #e3ad16; }
+.ludo-mini-progress b { color: #405553; font-size: .65rem; }
+.ludo-mini-progress small { grid-column: 1 / 3; color: #84918e; font-size: .52rem; text-align: center; }
+.ludo-footer { min-height: 58px; }
+@keyframes ludo-pulse { to { transform: translateY(-3px) scale(1.12); } }
+@keyframes dice-roll { 25% { transform: rotate(12deg) scale(.9); } 55% { transform: rotate(-18deg) scale(1.08); } 85% { transform: rotate(8deg); } }
+@media (max-width: 520px) {
+  .ludo-play-area { grid-template-columns: 1fr; gap: 15px; padding: 0 12px; }
+  .ludo-controls { display: grid; grid-template-columns: auto 64px 1fr; width: 100%; gap: 8px; border: 1px solid #e3eae6; border-radius: 18px; background: #fff; padding: 9px 11px; }
+  .control-label { display: none; }
+  .ludo-die { grid-column: 1; width: 54px; border-radius: 13px; }
+  .pip { width: 8px; height: 8px; }
+  .ludo-roll-button { grid-column: 2 / 4; padding: 12px; font-size: .78rem; }
+  .ludo-rule-tip { grid-column: 1 / 3; border: 0; padding: 3px; }
+  .ludo-mini-progress { grid-column: 3; justify-content: flex-end; }
+  .classic-ludo-board { border-width: 2px; }
+  .yard-inner { gap: 10%; padding: 12%; }
+  .ludo-piece { border-width: 1.5px; }
+  .ludo-heading { padding: 18px 18px 12px; }
+}
 .game-error { margin: 12px 18px 0; color: #b54d4d; text-align: center; font-size: .78rem; }
 .game-footer { display: flex; min-height: 66px; align-items: center; justify-content: center; padding: 14px 18px; }
 .game-action { width: 100%; max-width: 260px; }
