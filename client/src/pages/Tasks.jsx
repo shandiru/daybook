@@ -19,7 +19,11 @@ export default function Tasks() {
   const notified = useRef(new Set());
 
   const load = () => api.tasks(date).then((d) => setItems(d.sort((a, b) => (a.time || "99").localeCompare(b.time || "99")))).catch((e) => setErr(e.message));
-  useEffect(() => { load(); }, [date]);
+  useEffect(() => {
+    load();
+    const timer = window.setInterval(load, 5000);
+    return () => window.clearInterval(timer);
+  }, [date]);
 
   useEffect(() => {
     if (!reminders || permission !== "granted") return;

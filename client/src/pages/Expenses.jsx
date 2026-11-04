@@ -17,7 +17,11 @@ export default function Expenses() {
 
   const ykey = view === "day" ? date.slice(0, 4) : view === "month" ? month.slice(0, 4) : year;
   const load = () => api.expenses(ykey).then(setAll).catch((e) => setErr(e.message));
-  useEffect(() => { load(); }, [ykey]);
+  useEffect(() => {
+    load();
+    const timer = window.setInterval(load, 5000);
+    return () => window.clearInterval(timer);
+  }, [ykey]);
 
   const scope = useMemo(() =>
     view === "day" ? all.filter((e) => e.date === date) : view === "month" ? all.filter((e) => e.date.startsWith(month)) : all,

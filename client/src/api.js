@@ -37,6 +37,10 @@ export const api = {
   flipMemoryCard: (index) => req("/api/game/flip", "POST", { index }),
   resolveMemoryTurn: () => req("/api/game/resolve", "POST", {}),
   gameRematch: () => req("/api/game/rematch", "POST", {}),
+  ticTacToe: () => req("/api/game/tic-tac-toe"),
+  joinTicTacToe: () => req("/api/game/tic-tac-toe/join", "POST", {}),
+  moveTicTacToe: (index) => req("/api/game/tic-tac-toe/move", "POST", { index }),
+  rematchTicTacToe: () => req("/api/game/tic-tac-toe/rematch", "POST", {}),
 };
 
 export const todayStr = () => {

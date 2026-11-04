@@ -3,7 +3,7 @@ import express from "express";
 import cors from "cors";
 import mongoose from "mongoose";
 import jwt from "jsonwebtoken";
-import { Task, Expense, ChatMessage, ChatPresence, GameRoom } from "./models.js";
+import { Task, Expense, ChatMessage, ChatPresence, GameRoom, TicTacToeRoom } from "./models.js";
 
 const app = express();
 app.use(cors({ origin: process.env.CLIENT_URL?.split(",") || true }));
@@ -54,16 +54,24 @@ app.get("/api/chat/typing", auth, wrap(async (req, res) => {
   res.json(rows.map((row) => row.username));
 }));
 
-const memoryFaces = ["\u{1F349}", "\u{1F353}", "\u{1F34B}", "\u{1F347}", "\u{1F352}", "\u{1F95D}", "\u{1F34D}", "\u{1F965}"];
+const memoryFaces = ["A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L"];
 const shuffledMemoryBoard = () => {
   const cards = [...memoryFaces, ...memoryFaces];
   for (let i = cards.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [cards[i], cards[j]] = [cards[j], cards[i]]; }
   return cards;
 };
-const emptyMemoryGame = () => ({ room: "memory", players: [], board: Array(16).fill(""), matched: [], flipped: [], flipper: "", matchPending: false, scores: [0, 0], turn: "", winner: "", status: "waiting" });
-const getMemoryGame = () => GameRoom.findOneAndUpdate(
-  { room: "memory" }, { $setOnInsert: { room: "memory" } }, { upsert: true, new: true, setDefaultsOnInsert: true }
-);
+const emptyMemoryGame = () => ({ room: "memory", players: [], board: Array(24).fill(""), matched: [], flipped: [], flipper: "", matchPending: false, scores: [0, 0], turn: "", winner: "", status: "waiting" });
+const getMemoryGame = async () => {
+  const game = await GameRoom.findOneAndUpdate(
+    { room: "memory" }, { $setOnInsert: { room: "memory" } }, { upsert: true, new: true, setDefaultsOnInsert: true }
+  );
+  if (game.board.length !== 24) {
+    game.players = []; game.board = Array(24).fill(""); game.matched = []; game.flipped = [];
+    game.flipper = ""; game.matchPending = false; game.scores = [0, 0]; game.turn = ""; game.winner = ""; game.status = "waiting";
+    await game.save();
+  }
+  return game;
+};
 const gameView = (game) => {
   const view = game.toObject ? game.toObject() : { ...game };
   const visible = new Set([...(view.flipped || []), ...(view.matched || [])]);
@@ -71,8 +79,7 @@ const gameView = (game) => {
   return view;
 };
 app.get("/api/game", auth, wrap(async (_req, res) => {
-  const game = await GameRoom.findOne({ room: "memory" });
-  res.json(gameView(game || emptyMemoryGame()));
+  res.json(gameView(await getMemoryGame()));
 }));
 app.post("/api/game/join", auth, wrap(async (req, res) => {
   const game = await getMemoryGame();
@@ -126,10 +133,44 @@ app.post("/api/game/rematch", auth, wrap(async (req, res) => {
   const game = await getMemoryGame();
   if (game.status !== "finished") return res.status(409).json({ error: "Finish the game before starting a rematch." });
   if (!game.players.includes(req.user.username)) return res.status(403).json({ error: "Only a player can start a rematch." });
-  game.players = [req.user.username]; game.board = Array(16).fill(""); game.matched = []; game.flipped = [];
+  game.players = [req.user.username]; game.board = Array(24).fill(""); game.matched = []; game.flipped = [];
   game.flipper = ""; game.matchPending = false; game.scores = [0, 0]; game.winner = ""; game.turn = ""; game.status = "waiting";
   await game.save();
   res.json(gameView(game));
+}));
+
+const emptyTicTacToe = () => ({ room: "tic-tac-toe", players: [], board: Array(9).fill(""), turn: "", winner: "", status: "waiting" });
+const getTicTacToe = () => TicTacToeRoom.findOneAndUpdate({ room: "tic-tac-toe" }, { $setOnInsert: { room: "tic-tac-toe" } }, { upsert: true, new: true, setDefaultsOnInsert: true });
+const ticTacToeView = (room) => room || emptyTicTacToe();
+app.get("/api/game/tic-tac-toe", auth, wrap(async (_req, res) => res.json(ticTacToeView(await TicTacToeRoom.findOne({ room: "tic-tac-toe" })))));
+app.post("/api/game/tic-tac-toe/join", auth, wrap(async (req, res) => {
+  const room = await getTicTacToe();
+  if (room.status === "finished") return res.status(409).json({ error: "This game is over. Start a rematch first." });
+  if (!room.players.includes(req.user.username)) {
+    if (room.players.length >= 2) return res.status(409).json({ error: "This game already has two players." });
+    room.players.push(req.user.username);
+    if (room.players.length === 2) { room.status = "playing"; room.turn = room.players[0]; }
+    await room.save();
+  }
+  res.json(room);
+}));
+app.post("/api/game/tic-tac-toe/move", auth, wrap(async (req, res) => {
+  const room = await getTicTacToe();
+  const index = Number(req.body?.index);
+  if (room.status !== "playing" || room.turn !== req.user.username) return res.status(409).json({ error: "Wait for your turn." });
+  if (!Number.isInteger(index) || index < 0 || index > 8 || room.board[index]) return res.status(400).json({ error: "That square is not available." });
+  room.board.set(index, room.players.indexOf(req.user.username) === 0 ? "X" : "O");
+  const lines = [[0,1,2],[3,4,5],[6,7,8],[0,3,6],[1,4,7],[2,5,8],[0,4,8],[2,4,6]];
+  if (lines.some(([a,b,c]) => room.board[a] && room.board[a] === room.board[b] && room.board[b] === room.board[c])) { room.status = "finished"; room.winner = req.user.username; }
+  else if (room.board.every(Boolean)) room.status = "finished";
+  else room.turn = room.players.find((player) => player !== req.user.username);
+  await room.save(); res.json(room);
+}));
+app.post("/api/game/tic-tac-toe/rematch", auth, wrap(async (req, res) => {
+  const room = await getTicTacToe();
+  if (room.status !== "finished" || !room.players.includes(req.user.username)) return res.status(409).json({ error: "A player must finish the game before a rematch." });
+  room.players = [req.user.username]; room.board = Array(9).fill(""); room.turn = ""; room.winner = ""; room.status = "waiting";
+  await room.save(); res.json(room);
 }));
 function crud(path, Model, fields, listFilter) {
   const pick = (b) => Object.fromEntries(fields.filter((f) => b[f] !== undefined).map((f) => [f, b[f]]));

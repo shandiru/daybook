@@ -29,12 +29,21 @@ export const ChatPresence = models.ChatPresence || model("ChatPresence", new Sch
 export const GameRoom = models.GameRoom || model("GameRoom", new Schema({
   room: { type: String, default: "memory", unique: true },
   players: { type: [String], default: [] },
-  board: { type: [String], default: () => Array(16).fill("") },
+  board: { type: [String], default: () => Array(24).fill("") },
   matched: { type: [Number], default: [] },
   flipped: { type: [Number], default: [] },
   flipper: { type: String, default: "" },
   matchPending: { type: Boolean, default: false },
   scores: { type: [Number], default: () => [0, 0] },
+  turn: { type: String, default: "" },
+  winner: { type: String, default: "" },
+  status: { type: String, enum: ["waiting", "playing", "finished"], default: "waiting" },
+}, { timestamps: true }));
+
+export const TicTacToeRoom = models.TicTacToeRoom || model("TicTacToeRoom", new Schema({
+  room: { type: String, default: "tic-tac-toe", unique: true },
+  players: { type: [String], default: [] },
+  board: { type: [String], default: () => Array(9).fill("") },
   turn: { type: String, default: "" },
   winner: { type: String, default: "" },
   status: { type: String, enum: ["waiting", "playing", "finished"], default: "waiting" },

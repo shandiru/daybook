@@ -55,12 +55,14 @@ button:active { transform: scale(.98); }
 .game-status { display: flex; min-height: 49px; align-items: center; justify-content: center; gap: 8px; padding: 8px 14px; color: #55706f; text-align: center; font-size: .8rem; font-weight: 700; }
 .game-status-dot { width: 7px; height: 7px; flex: 0 0 auto; border-radius: 50%; background: #d1dbd7; }
 .game-status-dot.live { background: #23a17c; box-shadow: 0 0 0 4px #23a17c1c; }
-.memory-board { display: grid; width: min(100% - 44px, 380px); aspect-ratio: 1; grid-template-columns: repeat(4,minmax(0,1fr)); grid-template-rows: repeat(4,minmax(0,1fr)); gap: 9px; margin: 0 auto; perspective: 900px; }
+.memory-board { display: grid; width: min(100% - 44px, 420px); aspect-ratio: 3 / 2; grid-template-columns: repeat(6,minmax(0,1fr)); grid-template-rows: repeat(4,minmax(0,1fr)); gap: 8px; margin: 0 auto; perspective: 900px; }
 .memory-card { display: grid; min-width: 0; place-items: center; border: 1px solid #d9e8e1; border-radius: 18px; background: linear-gradient(145deg,#0e7c7b,#126b68); color: #d7f0e9; font-size: 1.55rem; font-weight: 800; box-shadow: 0 4px 10px #143b3218; transition: transform 180ms ease, background 180ms ease, color 180ms ease; }
 .memory-card:not(:disabled):hover { transform: translateY(-3px) rotateX(5deg); box-shadow: 0 8px 14px #143b3225; }
 .memory-card.is-open { transform: rotateY(180deg); border-color: #e8e5d8; background: #fffdf5; color: #334c46; font-size: clamp(1.5rem,8vw,2.7rem); }
 .memory-card.is-matched { border-color: #b8e1d2; background: #e6f6ef; box-shadow: inset 0 0 0 2px #c8eadc; cursor: default; }
 .memory-card:disabled:not(.is-open):not(.is-matched) { cursor: default; opacity: .86; }
+.tic-board { display: grid; width: min(100% - 44px, 360px); aspect-ratio: 1; grid-template-columns: repeat(3,minmax(0,1fr)); gap: 10px; margin: 0 auto; }
+.tic-cell { display: grid; place-items: center; border: 1px solid #d9e8e1; border-radius: 18px; background: #f6faf8; color: #0e7c7b; font-size: clamp(2.5rem, 14vw, 5rem); font-weight: 900; }
 .game-error { margin: 12px 18px 0; color: #b54d4d; text-align: center; font-size: .78rem; }
 .game-footer { display: flex; min-height: 66px; align-items: center; justify-content: center; padding: 14px 18px; }
 .game-action { width: 100%; max-width: 260px; }

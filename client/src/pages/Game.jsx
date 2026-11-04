@@ -1,14 +1,13 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { api, session } from "../api.js";
-
-const confetti = "\u{1F389} \u{2728} \u{1F38A} \u{2728} \u{1F389}";
-const trophy = "\u{1F3C6}";
+import TicTacToe from "./TicTacToe.jsx";
 
 export default function Game() {
   const [game, setGame] = useState(null);
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
   const [celebration, setCelebration] = useState(false);
+  const [selectedGame, setSelectedGame] = useState("memory");
   const previousStatus = useRef(null);
   const me = session.user?.name;
   const refresh = useCallback(async () => {
@@ -60,8 +59,12 @@ export default function Game() {
     : game.status === "finished" ? game.winner ? game.winner === me ? "You found more pairs! Amazing memory!" : `${game.winner} wins this memory match!` : "It's a draw — you found the same number of pairs!"
     : game.flipped?.length === 2 ? game.matchPending ? "A match! Nice one!" : "No match — remember those cards!" : isTurn ? "Your turn — flip two cards." : `${game.turn} is remembering the cards...`;
 
-  return <section className="game-panel">
-    <div className="game-heading"><div><span className="game-kicker">Flip. Remember. Match.</span><h2 className="text-2xl font-extrabold tracking-tight">Memory Match Duel</h2><p className="mt-1 text-sm text-ink/55">Find pairs to score. Match a pair and go again!</p></div><span className="game-emoji" aria-hidden="true">{"\u{1F9E0}"}</span></div>
+  return <div className="space-y-3">
+    <div className="grid grid-cols-2 rounded-xl bg-ink/10 p-1">
+      {[ ["memory", "Memory Match"], ["tic", "Tic Tac Toe"] ].map(([key, label]) => <button key={key} className={`rounded-lg py-3 text-sm font-semibold ${selectedGame === key ? "bg-white shadow-sm" : "text-ink/60"}`} onClick={() => setSelectedGame(key)}>{label}</button>)}
+    </div>
+    {selectedGame === "tic" ? <TicTacToe /> : <section className="game-panel">
+    <div className="game-heading"><div><span className="game-kicker">Flip. Remember. Match.</span><h2 className="text-2xl font-extrabold tracking-tight">Memory Match Duel</h2><p className="mt-1 text-sm text-ink/55">Find pairs to score. Match a pair and go again!</p></div><span className="game-emoji" aria-hidden="true">24</span></div>
     <div className="memory-scorebar">
       <div className={`memory-player ${game?.turn === game?.players?.[0] && game?.status === "playing" ? "active" : ""}`}><span className="memory-avatar first-player">{game?.players?.[0]?.slice(0, 1).toUpperCase() || "1"}</span><span><strong>{game?.players?.[0] || "Player 1"}</strong><small>Player 1</small></span><b>{scores[0]}</b></div>
       <span className="game-vs">VS</span>
@@ -69,7 +72,7 @@ export default function Game() {
     </div>
     <div className="game-status" aria-live="polite"><span className={`game-status-dot ${game?.status === "playing" ? "live" : ""}`} />{message}</div>
     <div className="memory-board" role="grid" aria-label="Memory match cards">
-      {(game?.board || Array(16).fill("")).map((face, index) => {
+      {(game?.board?.length === 24 ? game.board : Array(24).fill("")).map((face, index) => {
         const open = Boolean(face);
         const matched = game?.matched?.includes(index);
         return <button key={index} role="gridcell" aria-label={open ? `Card ${index + 1}: ${face}${matched ? ", matched" : ""}` : `Card ${index + 1}, face down`} className={`memory-card ${open ? "is-open" : ""} ${matched ? "is-matched" : ""}`} disabled={busy || !isTurn || open || game?.flipped?.length === 2} onClick={() => act(() => api.flipMemoryCard(index))}>{open ? face : <span aria-hidden="true">?</span>}</button>;
@@ -83,6 +86,7 @@ export default function Game() {
       {game?.status === "finished" && joined && <button className="btn game-action" disabled={busy} onClick={() => act(api.gameRematch)}>Play again</button>}
       {game?.status === "finished" && !joined && <span className="game-you-play">Ask a player to start another round.</span>}
     </div>
-    {celebration && <div className="win-celebration" role="dialog" aria-modal="true" aria-label="Winner celebration"><div className="win-confetti" aria-hidden="true">{confetti}</div><div className="win-trophy" aria-hidden="true">{trophy}</div><p className="game-kicker">What a champion!</p><h3>{game?.winner} wins!</h3><p>Your memory is unmatched!</p><button className="btn game-action" onClick={() => setCelebration(false)}>Let's go!</button><button className="celebration-close" onClick={() => setCelebration(false)} aria-label="Close celebration">x</button></div>}
-  </section>;
+    {celebration && <div className="win-celebration" role="dialog" aria-modal="true" aria-label="Winner celebration"><p className="game-kicker">What a champion!</p><h3>{game?.winner} wins!</h3><p>Your memory is unmatched!</p><button className="btn game-action" onClick={() => setCelebration(false)}>Play again</button><button className="celebration-close" onClick={() => setCelebration(false)} aria-label="Close celebration">x</button></div>}
+  </section>}
+  </div>;
 }
