@@ -99,6 +99,13 @@ export default function Ludo() {
 
   const boardCells = useMemo(() => {
     const cells = new Map();
+    for (let row = 0; row < 15; row += 1) {
+      for (let column = 0; column < 15; column += 1) {
+        const inCross = row >= 6 && row <= 8 || column >= 6 && column <= 8;
+        const inFinish = row >= 6 && row <= 8 && column >= 6 && column <= 8;
+        if (inCross && !inFinish) cells.set(keyFor([row, column]), { coordinate: [row, column], type: "scaffold" });
+      }
+    }
     TRACK.forEach((coordinate, trackIndex) => cells.set(keyFor(coordinate), { coordinate, trackIndex, type: "track" }));
     HOME_LANES.forEach((lane, owner) => lane.forEach((coordinate) => cells.set(keyFor(coordinate), { coordinate, owner, type: "lane" })));
     return [...cells.values()];
@@ -122,6 +129,15 @@ export default function Ludo() {
     </div>
     <div className="game-status" aria-live="polite"><span className={`game-status-dot ${game?.status === "playing" ? "live" : ""}`} />{status}</div>
     <div className="ludo-play-area">
+      <div className="ludo-controls">
+        <div className="ludo-dice-copy"><p className="control-label">{isTurn ? game?.dice ? "MOVE A PIECE" : "YOUR TURN" : game?.status === "playing" ? "LAST ROLL" : "DICE"}</p><strong>{rolling ? "Rolling…" : game?.dice ? `You rolled ${game.dice}` : isTurn ? "Tap the dice to roll" : game?.status === "playing" ? "Wait for your turn" : "Waiting for players"}</strong></div>
+        <button type="button" className={`ludo-dice-button ${isTurn && !game?.dice ? "is-ready" : ""}`} disabled={busy || rolling || !isTurn || Boolean(game?.dice)} onClick={rollDice} aria-label={rolling ? "Rolling dice" : game?.dice ? `Dice shows ${game.dice}; move a piece` : isTurn ? "Roll dice" : `Dice shows ${game?.lastRoll || 0}`}>
+          <Dice value={rolling ? rollingFace : (game?.dice || game?.lastRoll || 0)} rolling={rolling} />
+          <span>{rolling ? "ROLLING" : game?.dice ? "CHOOSE TOKEN" : isTurn ? "TAP TO ROLL" : "WAIT"}</span>
+        </button>
+        <div className="ludo-rule-tip"><span>★</span><p><strong>Safe square</strong>Your piece cannot be captured here.</p></div>
+        <div className="ludo-mini-progress">{[0, 1].map((owner) => <div key={owner}><span className={`dot ${PLAYER_COLORS[owner]}`} /><b>{game?.positions?.[owner]?.filter((position) => position === HOME_END).length || 0}/4</b><small>home</small></div>)}</div>
+      </div>
       <div className="classic-ludo-board" role="grid" aria-label="Classic Ludo board">
         <div className="ludo-home-base base-green" aria-label="Green yard"><div className="yard-inner">
           {[0, 1, 2, 3].map((token) => { const position = game?.positions?.[0]?.[token] ?? -1; return <span className="yard-spot" key={token}>{position === -1 && <Token owner={0} token={token} canMove={canMove(0, token, position)} busy={busy} onMove={(piece) => act(() => api.moveLudo(piece))} />}</span>; })}
@@ -136,7 +152,7 @@ export default function Ludo() {
           const pieces = piecesByCell.get(key) || [];
           const safe = type === "track" && SAFE_SQUARES.has(trackIndex);
           const startColor = trackIndex === 0 ? "green" : trackIndex === 13 ? "red" : trackIndex === 26 ? "yellow" : trackIndex === 39 ? "blue" : "";
-          return <div key={key} role="gridcell" style={{ gridRow: coordinate[0] + 1, gridColumn: coordinate[1] + 1 }} className={`classic-cell ${type === "lane" ? `home-lane lane-${PLAYER_COLORS[owner]}` : "track-cell"} ${safe ? "safe-cell" : ""} ${startColor ? `start-${startColor}` : ""}`}>
+          return <div key={key} role="gridcell" style={{ gridRow: coordinate[0] + 1, gridColumn: coordinate[1] + 1 }} className={`classic-cell ${type === "lane" ? `home-lane lane-${PLAYER_COLORS[owner]}` : type === "track" ? "track-cell" : "scaffold-cell"} ${safe ? "safe-cell" : ""} ${startColor ? `start-${startColor}` : ""}`}>
             {safe && <span className="safe-star" aria-hidden="true">★</span>}
             <div className={`ludo-stack ${pieces.length > 1 ? "is-stacked" : ""} ${pieces.length > 4 ? "is-crowded" : ""}`}>{pieces.map(({ owner: pieceOwner, token, position }) => <Token key={`${pieceOwner}-${token}`} owner={pieceOwner} token={token} canMove={canMove(pieceOwner, token, position)} busy={busy} onMove={(piece) => act(() => api.moveLudo(piece))} />)}</div>
           </div>;
@@ -145,15 +161,6 @@ export default function Ludo() {
           <span className="finish-label">HOME</span>
           <div className="finish-pieces">{(game?.positions || []).flatMap((positions, owner) => positions.map((position, token) => position === HOME_END ? <Token key={`${owner}-${token}`} owner={owner} token={token} canMove={false} busy onMove={() => {}} /> : null))}</div>
         </div>
-      </div>
-      <div className="ludo-controls">
-        <div className="ludo-dice-copy"><p className="control-label">{isTurn ? game?.dice ? "MOVE A PIECE" : "YOUR TURN" : "LAST ROLL"}</p><strong>{rolling ? "Rolling…" : game?.dice ? `You rolled ${game.dice}` : isTurn ? "Tap the dice" : game?.lastRoll ? `${game.turn}'s turn` : "Waiting to start"}</strong></div>
-        <button type="button" className="ludo-dice-button" disabled={busy || rolling || !isTurn || Boolean(game?.dice)} onClick={rollDice} aria-label={rolling ? "Rolling dice" : game?.dice ? `Dice shows ${game.dice}; move a piece` : isTurn ? "Roll dice" : `Dice shows ${game?.lastRoll || 0}`}>
-          <Dice value={rolling ? rollingFace : (game?.dice || game?.lastRoll || 0)} rolling={rolling} />
-          <span>{rolling ? "ROLLING" : game?.dice ? "CHOOSE TOKEN" : isTurn ? "ROLL" : "WAIT"}</span>
-        </button>
-        <div className="ludo-rule-tip"><span>★</span><p><strong>Safe square</strong>Your piece cannot be captured here.</p></div>
-        <div className="ludo-mini-progress">{[0, 1].map((owner) => <div key={owner}><span className={`dot ${PLAYER_COLORS[owner]}`} /><b>{game?.positions?.[owner]?.filter((position) => position === HOME_END).length || 0}/4</b><small>home</small></div>)}</div>
       </div>
     </div>
     {error && <p className="game-error" role="alert">{error}</p>}
