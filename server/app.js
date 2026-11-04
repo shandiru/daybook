@@ -4,7 +4,7 @@ import cors from "cors";
 import mongoose from "mongoose";
 import jwt from "jsonwebtoken";
 import { randomUUID } from "node:crypto";
-import { Task, Expense, ChatMessage, ChatPresence, GameRoom, TicTacToeRoom, GameHistory } from "./models.js";
+import { Task, Expense, ChatMessage, ChatPresence, GameRoom, LudoRoom, GameHistory } from "./models.js";
 
 const app = express();
 app.use(cors({ origin: process.env.CLIENT_URL?.split(",") || true }));
@@ -37,21 +37,34 @@ app.post("/api/auth/login", (req, res) => {
   res.json({ token: jwt.sign({ username }, process.env.JWT_SECRET, { expiresIn: "365d" }), user: { name: username } });
 });
 
-app.get("/api/chat", auth, wrap(async (_req, res) => {
-  res.json(await ChatMessage.find().sort({ createdAt: 1 }).limit(300));
+const chatChannel = (value) => value === "ludo" ? "ludo" : "general";
+const chatChannelFilter = (channel) => channel === "ludo" ? { channel: "ludo" } : { channel: { $in: ["general", null] } };
+app.get("/api/chat", auth, wrap(async (req, res) => {
+  res.json(await ChatMessage.find(chatChannelFilter(chatChannel(req.query.channel))).sort({ createdAt: 1 }).limit(300));
 }));
 app.post("/api/chat", auth, wrap(async (req, res) => {
   const text = String(req.body?.text || "").trim();
   if (!text) return res.status(400).json({ error: "Message cannot be empty" });
-  res.status(201).json(await ChatMessage.create({ sender: req.user.username, text }));
+  res.status(201).json(await ChatMessage.create({ sender: req.user.username, text, channel: chatChannel(req.body?.channel), seenBy: [req.user.username] }));
+}));
+app.get("/api/chat/unread", auth, wrap(async (req, res) => {
+  const rows = await ChatMessage.find({ sender: { $ne: req.user.username }, seenBy: { $ne: req.user.username } }).sort({ createdAt: -1 }).lean();
+  const counts = { general: 0, ludo: 0 };
+  rows.forEach((message) => { counts[chatChannel(message.channel)] += 1; });
+  res.json({ counts, latest: rows[0] || null });
+}));
+app.put("/api/chat/seen", auth, wrap(async (req, res) => {
+  const channel = chatChannel(req.body?.channel);
+  await ChatMessage.updateMany({ ...chatChannelFilter(channel), sender: { $ne: req.user.username }, seenBy: { $ne: req.user.username } }, { $addToSet: { seenBy: req.user.username } });
+  res.json({ ok: true });
 }));
 app.put("/api/chat/typing", auth, wrap(async (req, res) => {
   await ChatPresence.findOneAndUpdate({ username: req.user.username },
-    { typingUntil: req.body?.typing ? new Date(Date.now() + 4000) : null }, { upsert: true, new: true });
+    { typingUntil: req.body?.typing ? new Date(Date.now() + 4000) : null, channel: chatChannel(req.body?.channel) }, { upsert: true, new: true });
   res.json({ ok: true });
 }));
 app.get("/api/chat/typing", auth, wrap(async (req, res) => {
-  const rows = await ChatPresence.find({ username: { $ne: req.user.username }, typingUntil: { $gt: new Date() } });
+  const rows = await ChatPresence.find({ username: { $ne: req.user.username }, channel: chatChannel(req.query.channel), typingUntil: { $gt: new Date() } });
   res.json(rows.map((row) => row.username));
 }));
 
@@ -90,7 +103,7 @@ app.post("/api/game/hint", auth, wrap(async (req, res) => {
   res.json({ board: game.board, duration: 60 });
 }));
 app.get("/api/game/history", auth, wrap(async (req, res) => {
-  const game = req.query.type === "tic-tac-toe" ? "tic-tac-toe" : "memory";
+  const game = req.query.type === "ludo" ? "ludo" : "memory";
   const records = await GameHistory.find({ game }).sort({ createdAt: -1 }).limit(50).lean();
   const wins = await GameHistory.aggregate([
     { $match: { game, winner: { $ne: "" } } },
@@ -159,39 +172,63 @@ app.post("/api/game/rematch", auth, wrap(async (req, res) => {
   res.json(gameView(game));
 }));
 
-const emptyTicTacToe = () => ({ room: "tic-tac-toe", players: [], board: Array(9).fill(""), turn: "", winner: "", status: "waiting" });
-const getTicTacToe = () => TicTacToeRoom.findOneAndUpdate({ room: "tic-tac-toe" }, { $setOnInsert: { room: "tic-tac-toe" } }, { upsert: true, new: true, setDefaultsOnInsert: true });
-const ticTacToeView = (room) => room || emptyTicTacToe();
-app.get("/api/game/tic-tac-toe", auth, wrap(async (_req, res) => res.json(ticTacToeView(await TicTacToeRoom.findOne({ room: "tic-tac-toe" })))));
-app.post("/api/game/tic-tac-toe/join", auth, wrap(async (req, res) => {
-  const room = await getTicTacToe();
+const freshLudoPositions = () => [Array(4).fill(-1), Array(4).fill(-1)];
+const getLudo = () => LudoRoom.findOneAndUpdate({ room: "ludo" }, { $setOnInsert: { room: "ludo" } }, { upsert: true, new: true, setDefaultsOnInsert: true });
+const ludoLegalMoves = (room, playerIndex, dice) => room.positions[playerIndex]
+  .map((position, token) => ({ position, token }))
+  .filter(({ position }) => (position === -1 ? dice === 6 : position < 28 && position + dice <= 28))
+  .map(({ token }) => token);
+app.get("/api/game/ludo", auth, wrap(async (_req, res) => res.json(await getLudo())));
+app.post("/api/game/ludo/join", auth, wrap(async (req, res) => {
+  const room = await getLudo();
   if (room.status === "finished") return res.status(409).json({ error: "This game is over. Start a rematch first." });
   if (!room.players.includes(req.user.username)) {
     if (room.players.length >= 2) return res.status(409).json({ error: "This game already has two players." });
     room.players.push(req.user.username);
-    if (room.players.length === 2) { room.status = "playing"; room.turn = room.players[0]; room.matchId = randomUUID(); }
+    if (room.players.length === 2) { room.positions = freshLudoPositions(); room.status = "playing"; room.turn = room.players[0]; room.dice = 0; room.matchId = randomUUID(); }
     await room.save();
   }
   res.json(room);
 }));
-app.post("/api/game/tic-tac-toe/move", auth, wrap(async (req, res) => {
-  const room = await getTicTacToe();
-  const index = Number(req.body?.index);
+app.post("/api/game/ludo/roll", auth, wrap(async (req, res) => {
+  const room = await getLudo();
   if (room.status !== "playing" || room.turn !== req.user.username) return res.status(409).json({ error: "Wait for your turn." });
-  if (!Number.isInteger(index) || index < 0 || index > 8 || room.board[index]) return res.status(400).json({ error: "That square is not available." });
-  room.board.set(index, room.players.indexOf(req.user.username) === 0 ? "X" : "O");
-  const lines = [[0,1,2],[3,4,5],[6,7,8],[0,3,6],[1,4,7],[2,5,8],[0,4,8],[2,4,6]];
-  if (lines.some(([a,b,c]) => room.board[a] && room.board[a] === room.board[b] && room.board[b] === room.board[c])) { room.status = "finished"; room.winner = req.user.username; }
-  else if (room.board.every(Boolean)) room.status = "finished";
-  else room.turn = room.players.find((player) => player !== req.user.username);
+  if (room.dice) return res.status(409).json({ error: "Move a piece before rolling again." });
+  const playerIndex = room.players.indexOf(req.user.username);
+  room.dice = Math.floor(Math.random() * 6) + 1;
+  if (!ludoLegalMoves(room, playerIndex, room.dice).length) { room.dice = 0; room.turn = room.players[1 - playerIndex]; }
+  await room.save(); res.json(room);
+}));
+app.post("/api/game/ludo/move", auth, wrap(async (req, res) => {
+  const room = await getLudo();
+  const token = Number(req.body?.token);
+  const playerIndex = room.players.indexOf(req.user.username);
+  if (room.status !== "playing" || room.turn !== req.user.username || !room.dice) return res.status(409).json({ error: "Roll the dice on your turn first." });
+  if (!ludoLegalMoves(room, playerIndex, room.dice).includes(token)) return res.status(400).json({ error: "That piece cannot move with this roll." });
+  const positions = room.positions.map((items) => [...items]);
+  positions[playerIndex][token] = positions[playerIndex][token] === -1 ? 0 : positions[playerIndex][token] + room.dice;
+  let captured = false;
+  const moved = positions[playerIndex][token];
+  if (moved < 28) {
+    const absolute = (moved + playerIndex * 14) % 28;
+    const safe = [0, 7, 14, 21].includes(absolute);
+    if (!safe) positions[1 - playerIndex] = positions[1 - playerIndex].map((position) => {
+      if (position >= 0 && position < 28 && (position + (1 - playerIndex) * 14) % 28 === absolute) { captured = true; return -1; }
+      return position;
+    });
+  }
+  const rolledSix = room.dice === 6;
+  room.positions = positions; room.dice = 0;
+  if (positions[playerIndex].every((position) => position === 28)) { room.status = "finished"; room.winner = req.user.username; }
+  else if (!rolledSix && !captured) room.turn = room.players[1 - playerIndex];
   await room.save();
-  if (room.status === "finished") await GameHistory.updateOne({ matchId: room.matchId }, { $setOnInsert: { game: "tic-tac-toe", players: room.players, winner: room.winner } }, { upsert: true });
+  if (room.status === "finished") await GameHistory.updateOne({ matchId: room.matchId }, { $setOnInsert: { game: "ludo", players: room.players, winner: room.winner } }, { upsert: true });
   res.json(room);
 }));
-app.post("/api/game/tic-tac-toe/rematch", auth, wrap(async (req, res) => {
-  const room = await getTicTacToe();
+app.post("/api/game/ludo/rematch", auth, wrap(async (req, res) => {
+  const room = await getLudo();
   if (room.status !== "finished" || !room.players.includes(req.user.username)) return res.status(409).json({ error: "A player must finish the game before a rematch." });
-  room.players = [req.user.username]; room.matchId = ""; room.board = Array(9).fill(""); room.turn = ""; room.winner = ""; room.status = "waiting";
+  room.players = [req.user.username]; room.matchId = ""; room.positions = freshLudoPositions(); room.turn = ""; room.dice = 0; room.winner = ""; room.status = "waiting";
   await room.save(); res.json(room);
 }));
 function crud(path, Model, fields, listFilter) {

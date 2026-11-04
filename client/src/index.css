@@ -16,8 +16,13 @@ button:active { transform: scale(.98); }
 .install-button { border-radius: 999px; background: #d9efeb; padding: 8px 12px; color: #075d5b; font-size: .75rem; font-weight: 800; }
 .avatar-button { display: grid; width: 34px; height: 34px; place-items: center; border: 0; border-radius: 50%; background: #e6e9e5; color: #405553; font-size: .8rem; font-weight: 800; }
 .bottom-nav { z-index: 10; border-top: 1px solid #e4eae7; background: rgb(255 255 255 / 94%); backdrop-filter: blur(18px); }
-.nav-item { display: flex; min-height: 48px; flex-direction: column; align-items: center; justify-content: center; gap: 3px; border: 0; background: transparent; padding: 8px; color: #84918e; font-size: .7rem; font-weight: 700; }
+.nav-item { position: relative; display: flex; min-height: 48px; flex-direction: column; align-items: center; justify-content: center; gap: 3px; border: 0; background: transparent; padding: 8px; color: #84918e; font-size: .7rem; font-weight: 700; }
 .nav-item.active { color: #0e7c7b; }
+.nav-badge { position: absolute; top: 3px; left: calc(50% + 20px); min-width: 18px; border-radius: 999px; background: #db4b4b; padding: 2px 5px; color: white; font-size: .6rem; line-height: 1.3; box-shadow: 0 2px 6px #76262635; }
+.notification-button { display: grid; width: 36px; height: 36px; place-items: center; border: 1px solid #dce6e2; border-radius: 50%; background: white; font-size: .9rem; }
+.message-toast { position: fixed; z-index: 50; top: max(16px, env(safe-area-inset-top)); right: 16px; display: flex; width: min(360px, calc(100vw - 32px)); flex-direction: column; gap: 3px; border: 1px solid #cfe4dc; border-radius: 16px; background: #fffffff5; padding: 13px 16px; color: #263b38; text-align: left; box-shadow: 0 14px 45px #143b3230; backdrop-filter: blur(14px); animation: win-pop 240ms ease-out both; }
+.message-toast strong { color: #0e7c7b; font-size: .78rem; }
+.message-toast span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: .84rem; }
 .chat-panel { display: flex; min-height: min(68vh, 680px); flex-direction: column; overflow: hidden; border: 1px solid #e4eae7; border-radius: 24px; background: white; box-shadow: 0 8px 30px #143b3210; }
 .chat-heading { display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid #edf0ee; padding: 18px 20px; }
 .chat-live { display: inline-flex; align-items: center; gap: 6px; border-radius: 999px; background: #e8f6f0; padding: 6px 10px; color: #187854; font-size: .72rem; font-weight: 800; }
@@ -31,6 +36,7 @@ button:active { transform: scale(.98); }
 .theirs .chat-bubble { border-bottom-left-radius: 5px; }
 .chat-sender { margin-bottom: 3px; color: #0e7c7b; font-size: .72rem; font-weight: 800; }
 .chat-bubble time { display: block; margin-top: 4px; text-align: right; opacity: .6; font-size: .65rem; }
+.chat-seen { font-weight: 700; }
 .chat-typing { color: #66807b; font-size: .78rem; font-style: italic; }
 .chat-compose { display: flex; align-items: center; gap: 8px; border-top: 1px solid #edf0ee; padding: 12px; }
 .chat-compose .field { min-width: 0; }
@@ -62,8 +68,30 @@ button:active { transform: scale(.98); }
 .memory-card.is-open { transform: scale(1.03); border-color: #e8e5d8; background: #fffdf5; color: #334c46; font-size: clamp(1.5rem, 6vw, 3.5rem); }
 .memory-card.is-matched { border-color: #b8e1d2; background: #e6f6ef; box-shadow: inset 0 0 0 2px #c8eadc; cursor: default; }
 .memory-card:disabled:not(.is-open):not(.is-matched) { cursor: default; opacity: .86; }
-.tic-board { display: grid; width: min(100% - 44px, 360px); aspect-ratio: 1; grid-template-columns: repeat(3,minmax(0,1fr)); gap: 10px; margin: 0 auto; }
-.tic-cell { display: grid; place-items: center; border: 1px solid #d9e8e1; border-radius: 18px; background: #f6faf8; color: #0e7c7b; font-size: clamp(2.5rem, 14vw, 5rem); font-weight: 900; }
+.ludo-board { position: relative; display: grid; width: min(100% - 28px, 520px); aspect-ratio: 1; grid-template: repeat(8, 1fr) / repeat(8, 1fr); gap: 3px; margin: 0 auto; border: 5px solid #f4f7f5; border-radius: 24px; background: #dfe8e4; overflow: hidden; box-shadow: inset 0 0 0 1px #d1ddd8; }
+.ludo-track { position: relative; display: grid; min-width: 0; min-height: 0; place-items: center; background: white; }
+.ludo-track.safe { background: #e9f5f0; color: #13816d; }
+.ludo-track > small { position: absolute; color: #6cae9b; font-size: clamp(.45rem, 2vw, .7rem); }
+.ludo-stack { position: relative; z-index: 1; display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 1px; }
+.ludo-piece { display: grid; width: clamp(17px, 5.5vw, 29px); height: clamp(17px, 5.5vw, 29px); place-items: center; border: 2px solid white; border-radius: 50%; color: white; font-size: clamp(.5rem, 2.3vw, .7rem); font-weight: 900; line-height: 1; box-shadow: 0 2px 6px #173a3035; }
+.ludo-green { background: #159878; }
+.ludo-orange { background: #e38a32; }
+.ludo-green-soft { background: #e4f5ef; color: #147760; }
+.ludo-orange-soft { background: #fff0df; color: #9b5b1c; }
+.ludo-piece:disabled { opacity: 1; }
+.ludo-piece.can-move { cursor: pointer; animation: ludo-pulse 800ms ease-in-out infinite alternate; box-shadow: 0 0 0 3px #ffdc62, 0 4px 10px #173a3045; }
+.ludo-center { grid-area: 2 / 2 / 8 / 8; display: grid; grid-template-columns: 1fr .8fr 1fr; align-items: stretch; gap: 6px; padding: clamp(7px, 2.5vw, 16px); background: #f9fbfa; }
+.ludo-yard { display: flex; min-width: 0; flex-direction: column; align-items: center; justify-content: center; gap: 10px; border-radius: 18px; padding: 8px 4px; }
+.ludo-yard strong { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: clamp(.55rem, 2.4vw, .78rem); }
+.ludo-yard > div { display: grid; grid-template-columns: repeat(2, auto); gap: 5px; min-height: 50px; }
+.ludo-dice-area { display: flex; min-width: 0; flex-direction: column; align-items: center; justify-content: center; gap: 9px; }
+.ludo-dice-area .btn { width: 100%; padding: 9px 5px; font-size: clamp(.58rem, 2.4vw, .75rem); }
+.ludo-die { display: grid; width: clamp(42px, 12vw, 66px); aspect-ratio: 1; place-items: center; border: 2px solid #0e7c7b; border-radius: 15px; background: white; color: #0e7c7b; font-size: clamp(1.4rem, 6vw, 2.1rem); font-weight: 950; box-shadow: 0 5px 16px #143b3220; }
+.ludo-home-row { display: flex; justify-content: center; gap: 8px; padding: 10px 16px 0; }
+.ludo-home-row span { border-radius: 999px; padding: 6px 10px; font-size: .66rem; font-weight: 800; }
+.memory-avatar.ludo-green { background: #159878; }
+.memory-avatar.ludo-orange { background: #e38a32; }
+@keyframes ludo-pulse { to { transform: translateY(-3px) scale(1.08); } }
 .game-error { margin: 12px 18px 0; color: #b54d4d; text-align: center; font-size: .78rem; }
 .game-footer { display: flex; min-height: 66px; align-items: center; justify-content: center; padding: 14px 18px; }
 .game-action { width: 100%; max-width: 260px; }

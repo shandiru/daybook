@@ -1,7 +1,7 @@
 ﻿import { useCallback, useEffect, useRef, useState } from "react";
 import { api, session } from "../api.js";
 
-export default function Chat({ compact = false }) {
+export default function Chat({ compact = false, channel = "general" }) {
   const [messages, setMessages] = useState([]);
   const [typing, setTyping] = useState([]);
   const [text, setText] = useState("");
@@ -11,36 +11,40 @@ export default function Chat({ compact = false }) {
   const currentUser = session.user?.name;
   const refresh = useCallback(async () => {
     try {
-      const [nextMessages, nextTyping] = await Promise.all([api.chat(), api.typingUsers()]);
+      const [nextMessages, nextTyping] = await Promise.all([api.chat(channel), api.typingUsers(channel)]);
       setMessages((old) => JSON.stringify(old) === JSON.stringify(nextMessages) ? old : nextMessages);
       setTyping(nextTyping);
+      if (document.visibilityState === "visible") {
+        await api.markChatSeen(channel);
+        window.dispatchEvent(new CustomEvent("chat-seen", { detail: { channel } }));
+      }
     } catch (e) { setError(e.message); }
-  }, []);
+  }, [channel]);
   useEffect(() => {
     refresh();
     const timer = setInterval(() => { if (document.visibilityState === "visible") refresh(); }, 3000);
     const onVisible = () => { if (document.visibilityState === "visible") refresh(); };
     document.addEventListener("visibilitychange", onVisible);
-    return () => { clearInterval(timer); document.removeEventListener("visibilitychange", onVisible); clearTimeout(typingTimer.current); api.setTyping(false).catch(() => {}); };
+    return () => { clearInterval(timer); document.removeEventListener("visibilitychange", onVisible); clearTimeout(typingTimer.current); api.setTyping(false, channel).catch(() => {}); };
   }, [refresh]);
   useEffect(() => { endRef.current?.scrollIntoView({ behavior: "smooth" }); }, [messages]);
   function onChange(value) {
     setText(value);
-    api.setTyping(Boolean(value.trim())).catch(() => {});
+    api.setTyping(Boolean(value.trim()), channel).catch(() => {});
     clearTimeout(typingTimer.current);
-    if (value.trim()) typingTimer.current = setTimeout(() => api.setTyping(false).catch(() => {}), 2500);
+    if (value.trim()) typingTimer.current = setTimeout(() => api.setTyping(false, channel).catch(() => {}), 2500);
   }
   async function send(e) {
     e.preventDefault();
     const message = text.trim();
     if (!message) return;
     setText(""); setError(""); clearTimeout(typingTimer.current);
-    await api.setTyping(false).catch(() => {});
-    try { const saved = await api.sendChat(message); setMessages((items) => [...items.filter((m) => m._id !== saved._id), saved]); }
+    await api.setTyping(false, channel).catch(() => {});
+    try { const saved = await api.sendChat(message, channel); setMessages((items) => [...items.filter((m) => m._id !== saved._id), saved]); }
     catch (e) { setError(e.message); setText(message); }
   }
   return <section className={`chat-panel ${compact ? "chat-panel-compact" : ""}`}>
-    <div className="chat-heading"><div><h2 className="text-xl font-extrabold">{compact ? "Game Chat" : "Chat"}</h2><p className="text-sm text-ink/55">A shared conversation</p></div><span className="chat-live"><i /> Live</span></div>
+    <div className="chat-heading"><div><h2 className="text-xl font-extrabold">{channel === "ludo" ? "Ludo Chat" : compact ? "Game Chat" : "Chat"}</h2><p className="text-sm text-ink/55">A shared conversation</p></div><span className="chat-live"><i /> Live</span></div>
     <div className="chat-messages" aria-live="polite">
       {!messages.length && <p className="chat-empty">No messages yet. Say hello!</p>}
       {messages.map((message) => {
@@ -48,7 +52,7 @@ export default function Chat({ compact = false }) {
         return <div key={message._id} className={`chat-row ${mine ? "mine" : "theirs"}`}><div className="chat-bubble">
           {!mine && <p className="chat-sender">{message.sender}</p>}
           <p className="whitespace-pre-wrap break-words">{message.text}</p>
-          <time>{new Intl.DateTimeFormat("en-LK", { hour: "numeric", minute: "2-digit" }).format(new Date(message.createdAt))}</time>
+          <time>{new Intl.DateTimeFormat("en-LK", { hour: "numeric", minute: "2-digit" }).format(new Date(message.createdAt))}{mine && <span className="chat-seen"> · {message.seenBy?.some((name) => name !== currentUser) ? "Seen" : "Sent"}</span>}</time>
         </div></div>;
       })}
       {typing.length > 0 && <p className="chat-typing">{typing.join(", ")} {typing.length === 1 ? "is" : "are"} typing…</p>}

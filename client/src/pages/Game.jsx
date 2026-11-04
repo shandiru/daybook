@@ -1,6 +1,6 @@
 ﻿import { useCallback, useEffect, useRef, useState } from "react";
 import { api, session } from "../api.js";
-import TicTacToe from "./TicTacToe.jsx";
+import Ludo from "./Ludo.jsx";
 import GameHistory from "../components/GameHistory.jsx";
 import Chat from "./Chat.jsx";
 
@@ -66,9 +66,9 @@ export default function Game() {
 
   return <div className="space-y-3">
     <div className="grid grid-cols-2 rounded-xl bg-ink/10 p-1">
-      {[ ["memory", "Memory Match"], ["tic", "Tic Tac Toe"] ].map(([key, label]) => <button key={key} className={`rounded-lg py-3 text-sm font-semibold ${selectedGame === key ? "bg-white shadow-sm" : "text-ink/60"}`} onClick={() => setSelectedGame(key)}>{label}</button>)}
+      {[ ["memory", "Memory Match"], ["ludo", "Ludo"] ].map(([key, label]) => <button key={key} className={`rounded-lg py-3 text-sm font-semibold ${selectedGame === key ? "bg-white shadow-sm" : "text-ink/60"}`} onClick={() => setSelectedGame(key)}>{label}</button>)}
     </div>
-    {selectedGame === "tic" ? <TicTacToe /> : <><section className="game-panel">
+    {selectedGame === "ludo" ? <><Ludo /><div className="game-chat-dock">{chatOpen && <div className="game-chat-popover"><button className="game-chat-close" onClick={() => setChatOpen(false)} aria-label="Close chat">×</button><Chat compact channel="ludo" /></div>}<button className="game-chat-toggle" onClick={() => setChatOpen((open) => !open)} aria-expanded={chatOpen}>💬 Ludo Chat</button></div></> : <><section className="game-panel">
     <div className="game-heading"><div><span className="game-kicker">Flip. Remember. Match.</span><h2 className="text-2xl font-extrabold tracking-tight">Fruit & Animal Match</h2><p className="mt-1 text-sm text-ink/55">Find pairs to score. Match a pair and go again!</p></div><span className="game-emoji" aria-hidden="true">🍎</span></div>
     <div className="memory-scorebar">
       <div className={`memory-player ${game?.turn === game?.players?.[0] && game?.status === "playing" ? "active" : ""}`}><span className="memory-avatar first-player">{game?.players?.[0]?.slice(0, 1).toUpperCase() || "1"}</span><span><strong>{game?.players?.[0] || "Player 1"}</strong><small>Player 1</small></span><b>{scores[0]}</b></div>
@@ -98,6 +98,6 @@ export default function Game() {
       {game?.status === "finished" && !joined && <span className="game-you-play">Ask a player to start another round.</span>}
     </div>
     {celebration && <div className="win-celebration" role="dialog" aria-modal="true" aria-label="Winner celebration"><p className="game-kicker">What a champion!</p><h3>{game?.winner} wins!</h3><p>Your memory is unmatched!</p><button className="btn game-action" onClick={() => setCelebration(false)}>Play again</button><button className="celebration-close" onClick={() => setCelebration(false)} aria-label="Close celebration">x</button></div>}
-  </section><div className="game-chat-dock">{chatOpen && <div className="game-chat-popover"><button className="game-chat-close" onClick={() => setChatOpen(false)} aria-label="Close chat">×</button><Chat compact /></div>}<button className="game-chat-toggle" onClick={() => setChatOpen((open) => !open)} aria-expanded={chatOpen}>💬 Chat</button></div><GameHistory type="memory" /></>}
+  </section><GameHistory type="memory" /></>}
   </div>;
 }

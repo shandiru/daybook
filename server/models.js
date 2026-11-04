@@ -19,11 +19,14 @@ export const Expense = models.Expense || model("Expense", new Schema({
 export const ChatMessage = models.ChatMessage || model("ChatMessage", new Schema({
   sender: { type: String, required: true, index: true },
   text: { type: String, required: true, trim: true, maxlength: 2000 },
+  channel: { type: String, enum: ["general", "ludo"], default: "general", index: true },
+  seenBy: { type: [String], default: [] },
 }, { timestamps: true }));
 
 export const ChatPresence = models.ChatPresence || model("ChatPresence", new Schema({
   username: { type: String, required: true, unique: true },
   typingUntil: { type: Date, default: null },
+  channel: { type: String, enum: ["general", "ludo"], default: "general" },
 }, { timestamps: true }));
 
 export const GameRoom = models.GameRoom || model("GameRoom", new Schema({
@@ -41,19 +44,20 @@ export const GameRoom = models.GameRoom || model("GameRoom", new Schema({
   status: { type: String, enum: ["waiting", "playing", "finished"], default: "waiting" },
 }, { timestamps: true }));
 
-export const TicTacToeRoom = models.TicTacToeRoom || model("TicTacToeRoom", new Schema({
-  room: { type: String, default: "tic-tac-toe", unique: true },
+export const LudoRoom = models.LudoRoom || model("LudoRoom", new Schema({
+  room: { type: String, default: "ludo", unique: true },
   matchId: { type: String, default: "" },
   players: { type: [String], default: [] },
-  board: { type: [String], default: () => Array(9).fill("") },
+  positions: { type: Schema.Types.Mixed, default: () => [Array(4).fill(-1), Array(4).fill(-1)] },
   turn: { type: String, default: "" },
+  dice: { type: Number, default: 0 },
   winner: { type: String, default: "" },
   status: { type: String, enum: ["waiting", "playing", "finished"], default: "waiting" },
 }, { timestamps: true }));
 
 export const GameHistory = models.GameHistory || model("GameHistory", new Schema({
   matchId: { type: String, required: true, unique: true },
-  game: { type: String, enum: ["memory", "tic-tac-toe"], required: true, index: true },
+  game: { type: String, enum: ["memory", "ludo"], required: true, index: true },
   players: { type: [String], default: [] },
   winner: { type: String, default: "" },
 }, { timestamps: true }));
