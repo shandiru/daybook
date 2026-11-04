@@ -247,9 +247,11 @@ app.post("/api/game/ludo/move", auth, wrap(async (req, res) => {
     });
   }
   const rolledSix = room.dice === 6;
+  const reachedHome = positions[playerIndex][token] === LUDO_HOME;
   room.positions = positions; room.dice = 0;
+  if (!rolledSix) room.consecutiveSixes = 0;
   if (positions[playerIndex].every((position) => position === LUDO_HOME)) { room.status = "finished"; room.winner = req.user.username; room.consecutiveSixes = 0; }
-  else if (!rolledSix && !captured) { room.turn = room.players[1 - playerIndex]; room.consecutiveSixes = 0; }
+  else if (!rolledSix && !captured && !reachedHome) { room.turn = room.players[1 - playerIndex]; room.consecutiveSixes = 0; }
   await room.save();
   if (room.status === "finished") await GameHistory.updateOne({ matchId: room.matchId }, { $setOnInsert: { game: "ludo", players: room.players, winner: room.winner } }, { upsert: true });
   res.json(ludoView(room));

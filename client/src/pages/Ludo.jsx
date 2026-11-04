@@ -27,7 +27,7 @@ const HOME_LANES = [
 const keyFor = ([row, column]) => `${row}-${column}`;
 
 function Dice({ value, rolling }) {
-  return <span className={`ludo-die ${rolling ? "is-rolling" : ""}`} aria-label={value ? `Dice shows ${value}` : "Dice not rolled"}>
+  return <span className={`ludo-die ${rolling ? "is-rolling" : ""}`} aria-hidden="true">
     {value ? Array.from({ length: 9 }, (_, index) => <i key={index} className={`pip pip-${value}-${index}`} />) : <b>?</b>}
   </span>;
 }
@@ -42,6 +42,7 @@ export default function Ludo() {
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
   const [rolling, setRolling] = useState(false);
+  const [rollingFace, setRollingFace] = useState(1);
   const previousTurn = useRef("");
   const me = session.user?.name;
   const refresh = useCallback(async () => {
@@ -69,9 +70,11 @@ export default function Ludo() {
 
   async function rollDice() {
     setRolling(true);
-    await new Promise((resolve) => setTimeout(resolve, 420));
-    await act(api.rollLudo);
-    setRolling(false);
+    const animation = window.setInterval(() => setRollingFace(Math.floor(Math.random() * 6) + 1), 75);
+    await new Promise((resolve) => setTimeout(resolve, 525));
+    window.clearInterval(animation);
+    try { await act(api.rollLudo); }
+    finally { setRolling(false); }
   }
 
   const joined = game?.players?.includes(me);
@@ -135,7 +138,7 @@ export default function Ludo() {
           const startColor = trackIndex === 0 ? "green" : trackIndex === 13 ? "red" : trackIndex === 26 ? "yellow" : trackIndex === 39 ? "blue" : "";
           return <div key={key} role="gridcell" style={{ gridRow: coordinate[0] + 1, gridColumn: coordinate[1] + 1 }} className={`classic-cell ${type === "lane" ? `home-lane lane-${PLAYER_COLORS[owner]}` : "track-cell"} ${safe ? "safe-cell" : ""} ${startColor ? `start-${startColor}` : ""}`}>
             {safe && <span className="safe-star" aria-hidden="true">★</span>}
-            <div className={`ludo-stack count-${pieces.length}`}>{pieces.map(({ owner: pieceOwner, token, position }) => <Token key={`${pieceOwner}-${token}`} owner={pieceOwner} token={token} canMove={canMove(pieceOwner, token, position)} busy={busy} onMove={(piece) => act(() => api.moveLudo(piece))} />)}</div>
+            <div className={`ludo-stack ${pieces.length > 1 ? "is-stacked" : ""} ${pieces.length > 4 ? "is-crowded" : ""}`}>{pieces.map(({ owner: pieceOwner, token, position }) => <Token key={`${pieceOwner}-${token}`} owner={pieceOwner} token={token} canMove={canMove(pieceOwner, token, position)} busy={busy} onMove={(piece) => act(() => api.moveLudo(piece))} />)}</div>
           </div>;
         })}
         <div className="ludo-finish" aria-label="Home">
@@ -144,9 +147,11 @@ export default function Ludo() {
         </div>
       </div>
       <div className="ludo-controls">
-        <p className="control-label">{isTurn ? "YOUR ROLL" : "DICE"}</p>
-        <Dice value={game?.dice || game?.lastRoll || 0} rolling={rolling} />
-        <button className="btn ludo-roll-button" disabled={busy || rolling || !isTurn || Boolean(game?.dice)} onClick={rollDice}>{rolling ? "Rolling…" : game?.dice ? "Move a piece" : "Roll dice"}</button>
+        <div className="ludo-dice-copy"><p className="control-label">{isTurn ? game?.dice ? "MOVE A PIECE" : "YOUR TURN" : "LAST ROLL"}</p><strong>{rolling ? "Rolling…" : game?.dice ? `You rolled ${game.dice}` : isTurn ? "Tap the dice" : game?.lastRoll ? `${game.turn}'s turn` : "Waiting to start"}</strong></div>
+        <button type="button" className="ludo-dice-button" disabled={busy || rolling || !isTurn || Boolean(game?.dice)} onClick={rollDice} aria-label={rolling ? "Rolling dice" : game?.dice ? `Dice shows ${game.dice}; move a piece` : isTurn ? "Roll dice" : `Dice shows ${game?.lastRoll || 0}`}>
+          <Dice value={rolling ? rollingFace : (game?.dice || game?.lastRoll || 0)} rolling={rolling} />
+          <span>{rolling ? "ROLLING" : game?.dice ? "CHOOSE TOKEN" : isTurn ? "ROLL" : "WAIT"}</span>
+        </button>
         <div className="ludo-rule-tip"><span>★</span><p><strong>Safe square</strong>Your piece cannot be captured here.</p></div>
         <div className="ludo-mini-progress">{[0, 1].map((owner) => <div key={owner}><span className={`dot ${PLAYER_COLORS[owner]}`} /><b>{game?.positions?.[owner]?.filter((position) => position === HOME_END).length || 0}/4</b><small>home</small></div>)}</div>
       </div>
@@ -155,7 +160,7 @@ export default function Ludo() {
     <div className="game-footer ludo-footer">
       {game?.status === "waiting" && !joined && <button className="btn game-action" disabled={busy} onClick={() => act(api.joinLudo)}>{game.players?.length ? "Join Ludo" : "Start Ludo"}</button>}
       {game?.status === "waiting" && joined && <span className="game-you-play">You’re in — Player 2 can join now.</span>}
-      {game?.status === "playing" && joined && <span className="game-you-play"><b>Roll 6</b> to leave the yard · Capture or roll 6 to play again · Exact roll to reach home</span>}
+      {game?.status === "playing" && joined && <span className="game-you-play"><b>Roll 6</b> to leave the yard · Capture, reach home, or roll 6 to play again · Exact roll to finish</span>}
       {game?.status === "finished" && joined && <button className="btn game-action" disabled={busy} onClick={() => act(api.rematchLudo)}>Play again</button>}
       {game?.status === "finished" && !joined && <span className="game-you-play">The match is over. A player can start the next round.</span>}
     </div>
