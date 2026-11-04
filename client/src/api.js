@@ -33,6 +33,7 @@ export const api = {
   setTyping: (typing) => req("/api/chat/typing", "PUT", { typing }),
   typingUsers: () => req("/api/chat/typing"),
   game: () => req("/api/game"),
+  memoryHint: () => req("/api/game/hint", "POST", {}),
   joinGame: () => req("/api/game/join", "POST", {}),
   flipMemoryCard: (index) => req("/api/game/flip", "POST", { index }),
   resolveMemoryTurn: () => req("/api/game/resolve", "POST", {}),

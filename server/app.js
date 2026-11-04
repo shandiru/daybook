@@ -82,6 +82,13 @@ const gameView = (game) => {
 app.get("/api/game", auth, wrap(async (_req, res) => {
   res.json(gameView(await getMemoryGame()));
 }));
+app.post("/api/game/hint", auth, wrap(async (req, res) => {
+  if (req.user.username !== "dirushan") return res.status(403).json({ error: "This hint is not available for this account." });
+  const game = await getMemoryGame();
+  if (game.status !== "waiting") return res.status(409).json({ error: "The hint is only available before the game starts." });
+  if (!game.board.some(Boolean)) { game.board = shuffledMemoryBoard(); await game.save(); }
+  res.json({ board: game.board, duration: 60 });
+}));
 app.get("/api/game/history", auth, wrap(async (req, res) => {
   const game = req.query.type === "tic-tac-toe" ? "tic-tac-toe" : "memory";
   const records = await GameHistory.find({ game }).sort({ createdAt: -1 }).limit(50).lean();
@@ -99,7 +106,8 @@ app.post("/api/game/join", auth, wrap(async (req, res) => {
     if (game.players.length >= 2) return res.status(409).json({ error: "This game already has two players." });
     game.players.push(req.user.username);
     if (game.players.length === 2) {
-      game.board = shuffledMemoryBoard(); game.matched = []; game.flipped = []; game.scores = [0, 0];
+      if (!game.board.some(Boolean)) game.board = shuffledMemoryBoard();
+      game.matched = []; game.flipped = []; game.scores = [0, 0];
       game.flipper = ""; game.matchPending = false; game.status = "playing"; game.turn = game.players[0]; game.matchId = randomUUID();
     }
     await game.save();
