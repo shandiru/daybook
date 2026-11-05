@@ -4,7 +4,7 @@ import cors from "cors";
 import mongoose from "mongoose";
 import jwt from "jsonwebtoken";
 import { randomUUID } from "node:crypto";
-import { Task, Expense, ChatMessage, ChatPresence, GameRoom, LudoRoom, GameHistory } from "./models.js";
+import { Task, Expense, ChatMessage, ChatPresence, GameRoom, LudoRoom, ConnectFourRoom, GameHistory } from "./models.js";
 
 const app = express();
 app.use(cors({ origin: process.env.CLIENT_URL?.split(",") || true }));
@@ -103,7 +103,7 @@ app.post("/api/game/hint", auth, wrap(async (req, res) => {
   res.json({ board: game.board, duration: 60 });
 }));
 app.get("/api/game/history", auth, wrap(async (req, res) => {
-  const game = req.query.type === "ludo" ? "ludo" : "memory";
+  const game = ["ludo", "connect-four"].includes(req.query.type) ? req.query.type : "memory";
   const records = await GameHistory.find({ game }).sort({ createdAt: -1 }).limit(50).lean();
   const wins = await GameHistory.aggregate([
     { $match: { game, winner: { $ne: "" } } },
@@ -261,6 +261,50 @@ app.post("/api/game/ludo/rematch", auth, wrap(async (req, res) => {
   if (room.status !== "finished" || !room.players.includes(req.user.username)) return res.status(409).json({ error: "A player must finish the game before a rematch." });
   room.players = [req.user.username]; room.matchId = ""; room.positions = freshLudoPositions(); room.turn = ""; room.dice = 0; room.lastRoll = 0; room.consecutiveSixes = 0; room.winner = ""; room.status = "waiting";
   await room.save(); res.json(ludoView(room));
+}));
+
+const getConnectFour = async () => ConnectFourRoom.findOneAndUpdate({ room: "connect-four" }, { $setOnInsert: { room: "connect-four" } }, { upsert: true, new: true, setDefaultsOnInsert: true });
+const hasFour = (board, row, column, mark) => [[0,1],[1,0],[1,1],[1,-1]].some(([dr, dc]) => {
+  let count = 1;
+  for (const direction of [-1, 1]) {
+    let r = row + dr * direction; let c = column + dc * direction;
+    while (r >= 0 && r < 6 && c >= 0 && c < 7 && board[r * 7 + c] === mark) { count += 1; r += dr * direction; c += dc * direction; }
+  }
+  return count >= 4;
+});
+app.get("/api/game/connect-four", auth, wrap(async (_req, res) => res.json(await getConnectFour())));
+app.post("/api/game/connect-four/join", auth, wrap(async (req, res) => {
+  const room = await getConnectFour();
+  if (room.status === "finished") return res.status(409).json({ error: "This game is over. Start a rematch first." });
+  if (!room.players.includes(req.user.username)) {
+    if (room.players.length >= 2) return res.status(409).json({ error: "This game already has two players." });
+    room.players.push(req.user.username);
+    if (room.players.length === 2) { room.board = Array(42).fill(""); room.turn = room.players[0]; room.status = "playing"; room.matchId = randomUUID(); }
+    await room.save();
+  }
+  res.json(room);
+}));
+app.post("/api/game/connect-four/drop", auth, wrap(async (req, res) => {
+  const room = await getConnectFour(); const column = Number(req.body?.column);
+  if (room.status !== "playing" || room.turn !== req.user.username) return res.status(409).json({ error: "Wait for your turn." });
+  if (!Number.isInteger(column) || column < 0 || column > 6) return res.status(400).json({ error: "Choose a valid column." });
+  let row = 5;
+  while (row >= 0 && room.board[row * 7 + column]) row -= 1;
+  if (row < 0) return res.status(400).json({ error: "That column is full." });
+  const player = room.players.indexOf(req.user.username); const mark = player === 0 ? "R" : "Y";
+  room.board[row * 7 + column] = mark;
+  const won = hasFour(room.board, row, column, mark);
+  if (won || room.board.every(Boolean)) {
+    room.status = "finished"; room.winner = won ? req.user.username : "";
+    await GameHistory.updateOne({ matchId: room.matchId }, { $setOnInsert: { game: "connect-four", players: room.players, winner: room.winner } }, { upsert: true });
+  } else room.turn = room.players[1 - player];
+  await room.save(); res.json(room);
+}));
+app.post("/api/game/connect-four/rematch", auth, wrap(async (req, res) => {
+  const room = await getConnectFour();
+  if (room.status !== "finished" || !room.players.includes(req.user.username)) return res.status(409).json({ error: "A player must finish the game before a rematch." });
+  room.players = [req.user.username]; room.board = Array(42).fill(""); room.turn = ""; room.winner = ""; room.status = "waiting"; room.matchId = "";
+  await room.save(); res.json(room);
 }));
 function crud(path, Model, fields, listFilter) {
   const pick = (b) => Object.fromEntries(fields.filter((f) => b[f] !== undefined).map((f) => [f, b[f]]));

@@ -67,6 +67,13 @@ button:active { transform: scale(.98); }
 .game-status-dot.live { background: #23a17c; box-shadow: 0 0 0 4px #23a17c1c; }
 .memory-board { display: grid; width: min(100% - 44px, 420px); aspect-ratio: 3 / 2; grid-template-columns: repeat(6,minmax(0,1fr)); grid-template-rows: repeat(4,minmax(0,1fr)); gap: 8px; margin: 0 auto; perspective: 900px; }
 .memory-board { width: min(100% - 32px, 640px); gap: clamp(5px, 1.5vw, 10px); }
+.connect-four-board { display: grid; width: min(100% - 32px, 490px); grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 5px; margin: 0 auto; border: 8px solid #0e7c7b; border-radius: 18px; background: #0e7c7b; box-shadow: 0 8px 20px #143b3220; }
+.connect-four-column { display: grid; min-width: 0; grid-template-rows: repeat(6, 1fr); gap: 5px; border: 0; background: transparent; padding: 0; }
+.connect-four-column:not(:disabled) { cursor: pointer; }
+.connect-four-slot { display: block; width: 100%; aspect-ratio: 1; border: 1px solid #d2e3de; border-radius: 50%; background: #f7fbf9; box-shadow: inset 0 2px 4px #143b3214; }
+.connect-four-column:not(:disabled):hover .connect-four-slot:not(.disc-r):not(.disc-y) { background: #d8eee6; }
+.connect-four-slot.disc-r { border-color: #d7534c; background: radial-gradient(circle at 35% 30%, #ffaaa0, #e24943 65%, #b92f2b); box-shadow: inset 0 -3px 4px #84251f55, 0 1px 3px #163a3260; }
+.connect-four-slot.disc-y { border-color: #e0ad24; background: radial-gradient(circle at 35% 30%, #fff2a8, #f0c238 65%, #ce9418); box-shadow: inset 0 -3px 4px #88621655, 0 1px 3px #163a3260; }
 .memory-card { display: grid; min-width: 0; min-height: 0; place-items: center; overflow: hidden; border: 1px solid #d9e8e1; border-radius: 18px; background: linear-gradient(145deg,#0e7c7b,#126b68); color: #d7f0e9; font-size: clamp(1.15rem, 5vw, 2.5rem); font-weight: 800; line-height: 1; box-shadow: 0 4px 10px #143b3218; transition: transform 180ms ease, background 180ms ease, color 180ms ease; }
 .memory-card:not(:disabled):hover { transform: translateY(-3px) rotateX(5deg); box-shadow: 0 8px 14px #143b3225; }
 .memory-card.is-open { transform: scale(1.03); border-color: #e8e5d8; background: #fffdf5; color: #334c46; font-size: clamp(1.5rem, 6vw, 3.5rem); }

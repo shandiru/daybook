@@ -44,8 +44,10 @@ export default function Ludo() {
   const [rolling, setRolling] = useState(false);
   const [rollingFace, setRollingFace] = useState(1);
   const previousTurn = useRef("");
+  const interaction = useRef(false);
   const me = session.user?.name;
   const refresh = useCallback(async () => {
+    if (interaction.current) return;
     try { setGame(await api.ludo()); setError(""); } catch (e) { setError(e.message); }
   }, []);
 
@@ -63,18 +65,20 @@ export default function Ludo() {
   }, [game?.turn, me]);
 
   async function act(action) {
+    interaction.current = true;
     setBusy(true); setError("");
-    try { setGame(await action()); } catch (e) { setError(e.message); await refresh(); }
-    finally { setBusy(false); }
+    try { setGame(await action()); } catch (e) { setError(e.message); try { setGame(await api.ludo()); } catch { /* Keep the last board visible. */ } }
+    finally { interaction.current = false; setBusy(false); }
   }
 
   async function rollDice() {
+    interaction.current = true;
     setRolling(true);
     const animation = window.setInterval(() => setRollingFace(Math.floor(Math.random() * 6) + 1), 75);
     await new Promise((resolve) => setTimeout(resolve, 525));
     window.clearInterval(animation);
     try { await act(api.rollLudo); }
-    finally { setRolling(false); }
+    finally { interaction.current = false; setRolling(false); }
   }
 
   const joined = game?.players?.includes(me);

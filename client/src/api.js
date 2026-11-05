@@ -46,6 +46,10 @@ export const api = {
   rollLudo: () => req("/api/game/ludo/roll", "POST", {}),
   moveLudo: (token) => req("/api/game/ludo/move", "POST", { token }),
   rematchLudo: () => req("/api/game/ludo/rematch", "POST", {}),
+  connectFour: () => req("/api/game/connect-four"),
+  joinConnectFour: () => req("/api/game/connect-four/join", "POST", {}),
+  dropConnectFour: (column) => req("/api/game/connect-four/drop", "POST", { column }),
+  rematchConnectFour: () => req("/api/game/connect-four/rematch", "POST", {}),
 };
 
 export const todayStr = () => {

@@ -58,9 +58,19 @@ export const LudoRoom = models.LudoRoom || model("LudoRoom", new Schema({
   status: { type: String, enum: ["waiting", "playing", "finished"], default: "waiting" },
 }, { timestamps: true }));
 
+export const ConnectFourRoom = models.ConnectFourRoom || model("ConnectFourRoom", new Schema({
+  room: { type: String, default: "connect-four", unique: true },
+  matchId: { type: String, default: "" },
+  players: { type: [String], default: [] },
+  board: { type: [String], default: () => Array(42).fill("") },
+  turn: { type: String, default: "" },
+  winner: { type: String, default: "" },
+  status: { type: String, enum: ["waiting", "playing", "finished"], default: "waiting" },
+}, { timestamps: true }));
+
 export const GameHistory = models.GameHistory || model("GameHistory", new Schema({
   matchId: { type: String, required: true, unique: true },
-  game: { type: String, enum: ["memory", "ludo"], required: true, index: true },
+  game: { type: String, enum: ["memory", "ludo", "connect-four"], required: true, index: true },
   players: { type: [String], default: [] },
   winner: { type: String, default: "" },
 }, { timestamps: true }));
