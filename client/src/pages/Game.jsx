@@ -56,6 +56,12 @@ export default function Game() {
     finally { setBusy(false); }
   }
 
+  function restartGame() {
+    if (!window.confirm("Restart this match? The current score and matched cards will be cleared.")) return;
+    setCelebration(false);
+    act(api.restartMemoryGame);
+  }
+
   const joined = game?.players?.includes(me);
   const playerIndex = joined ? game.players.indexOf(me) : -1;
   const isTurn = game?.status === "playing" && game.turn === me;
@@ -94,7 +100,7 @@ export default function Game() {
       })}>{hintOpen ? "Hide all boxes" : "Open all boxes"}</button>}
       {game?.status === "waiting" && !joined && <button className="btn game-action" disabled={busy} onClick={() => act(api.joinGame)}>{game.players?.length ? "Join the challenge" : "Start a game"}</button>}
       {game?.status === "waiting" && joined && <span className="game-you-play">Youâ€™re in â€” player 2 can join now.</span>}
-      {game?.status === "playing" && joined && <span className="game-you-play">{isTurn ? "Your turn" : "Your opponent's turn"} - collect matching pairs</span>}
+      {game?.status === "playing" && joined && <><span className="game-you-play">{isTurn ? "Your turn" : "Your opponent's turn"} - collect matching pairs</span><button className="game-restart" disabled={busy} onClick={restartGame}>Restart game</button></>}
       {game?.status === "finished" && joined && <button className="btn game-action" disabled={busy} onClick={() => act(api.gameRematch)}>Play again</button>}
       {game?.status === "finished" && !joined && <span className="game-you-play">Ask a player to start another round.</span>}
     </div>

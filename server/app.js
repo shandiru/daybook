@@ -162,6 +162,17 @@ app.post("/api/game/resolve", auth, wrap(async (req, res) => {
   if (game.status === "finished") await GameHistory.updateOne({ matchId: game.matchId }, { $setOnInsert: { game: "memory", players: game.players, winner: game.winner } }, { upsert: true });
   res.json(gameView(game));
 }));
+app.post("/api/game/restart", auth, wrap(async (req, res) => {
+  const game = await getMemoryGame();
+  if (game.status !== "playing") return res.status(409).json({ error: "Only an active game can be restarted." });
+  if (!game.players.includes(req.user.username)) return res.status(403).json({ error: "Only a player can restart this game." });
+  game.matchId = randomUUID();
+  game.board = shuffledMemoryBoard();
+  game.matched = []; game.flipped = []; game.flipper = ""; game.matchPending = false;
+  game.scores = [0, 0]; game.winner = ""; game.turn = req.user.username;
+  await game.save();
+  res.json(gameView(game));
+}));
 app.post("/api/game/rematch", auth, wrap(async (req, res) => {
   const game = await getMemoryGame();
   if (game.status !== "finished") return res.status(409).json({ error: "Finish the game before starting a rematch." });

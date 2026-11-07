@@ -181,8 +181,10 @@ button:active { transform: scale(.98); }
   .ludo-rule-tip p { font-size: .5rem; }
 }
 .game-error { margin: 12px 18px 0; color: #b54d4d; text-align: center; font-size: .78rem; }
-.game-footer { display: flex; min-height: 66px; align-items: center; justify-content: center; padding: 14px 18px; }
+.game-footer { display: flex; min-height: 66px; align-items: center; justify-content: center; gap: 12px; padding: 14px 18px; }
 .game-action { width: 100%; max-width: 260px; }
+.game-restart { flex: 0 0 auto; border: 1px solid #e2b8b5; border-radius: 12px; background: #fff7f6; padding: 8px 12px; color: #a3443f; font-size: .72rem; font-weight: 800; }
+.game-restart:disabled { opacity: .5; }
 .game-you-play { color: #71817c; text-align: center; font-size: .76rem; }
 .win-celebration { position: absolute; z-index: 2; inset: 14% 7% auto; display: flex; flex-direction: column; align-items: center; gap: 10px; border: 1px solid #c4e8dc; border-radius: 26px; background: #fffffff5; padding: 32px 22px 24px; text-align: center; box-shadow: 0 20px 70px #0a403a35; animation: win-pop 420ms cubic-bezier(.2,.9,.25,1.25) both; }
 .win-trophy { font-size: 4rem; animation: trophy-bounce 950ms ease-in-out infinite alternate; }

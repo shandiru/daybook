@@ -39,6 +39,7 @@ export const api = {
   joinGame: () => req("/api/game/join", "POST", {}),
   flipMemoryCard: (index) => req("/api/game/flip", "POST", { index }),
   resolveMemoryTurn: () => req("/api/game/resolve", "POST", {}),
+  restartMemoryGame: () => req("/api/game/restart", "POST", {}),
   gameRematch: () => req("/api/game/rematch", "POST", {}),
   gameHistory: (type) => req(`/api/game/history?type=${encodeURIComponent(type)}`),
   ludo: () => req("/api/game/ludo"),
