@@ -7,14 +7,14 @@ export const session = {
   clear() { localStorage.removeItem("token"); localStorage.removeItem("user"); },
 };
 
-async function req(path, method = "GET", body) {
+async function req(path, method = "GET", body, token = session.token) {
   const res = await fetch(BASE + path, {
     method,
-    headers: { "Content-Type": "application/json", ...(session.token && { Authorization: `Bearer ${session.token}` }) },
+    headers: { "Content-Type": "application/json", ...(token && { Authorization: `Bearer ${token}` }) },
     body: body ? JSON.stringify(body) : undefined,
   });
   const data = await res.json().catch(() => ({}));
-  if (res.status === 401 && session.token) { session.clear(); location.reload(); }
+  if (res.status === 401 && token === session.token && session.token) { session.clear(); location.reload(); }
   if (!res.ok) throw new Error(data.error || "Something went wrong");
   return data;
 }
@@ -29,6 +29,12 @@ export const api = {
   addExpense: (b) => req("/api/expenses", "POST", b),
   delExpense: (id) => req(`/api/expenses/${id}`, "DELETE"),
   chat: (channel = "general") => req(`/api/chat?channel=${encodeURIComponent(channel)}`),
+  unlockSecretChat: (password) => req("/api/chat/secret/unlock", "POST", { password }),
+  secretChat: (channel, token) => req(`/api/chat?channel=${encodeURIComponent(channel)}`, "GET", undefined, token),
+  sendSecretChat: (text, channel, token) => req("/api/chat", "POST", { text, channel }, token),
+  markSecretChatSeen: (channel, token) => req("/api/chat/seen", "PUT", { channel }, token),
+  setSecretTyping: (typing, channel, token) => req("/api/chat/typing", "PUT", { typing, channel }, token),
+  secretTypingUsers: (channel, token) => req(`/api/chat/typing?channel=${encodeURIComponent(channel)}`, "GET", undefined, token),
   sendChat: (text, channel = "general") => req("/api/chat", "POST", { text, channel }),
   chatUnread: () => req("/api/chat/unread"),
   markChatSeen: (channel = "general") => req("/api/chat/seen", "PUT", { channel }),

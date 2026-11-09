@@ -25,6 +25,15 @@ function auth(req, res, next) {
   catch { res.status(401).json({ error: "Please log in again" }); }
 }
 
+function secretAuth(req, res, next) {
+  try {
+    const user = jwt.verify((req.headers.authorization || "").replace("Bearer ", ""), process.env.JWT_SECRET);
+    if (!user.secretChat) return res.status(403).json({ error: "Unlock Maximum Love to continue" });
+    req.user = user;
+    next();
+  } catch { res.status(401).json({ error: "Maximum Love access expired. Unlock it again." }); }
+}
+
 app.get("/api/health", (_q, r) => r.json({ ok: true }));
 
 // Credentials come from .env (APP_USER / APP_PASS and APP_USER2 / APP_PASS2)
@@ -37,34 +46,44 @@ app.post("/api/auth/login", (req, res) => {
   res.json({ token: jwt.sign({ username }, process.env.JWT_SECRET, { expiresIn: "365d" }), user: { name: username } });
 });
 
-const chatChannel = () => "general";
-const chatChannelFilter = () => ({ channel: { $in: ["general", null] } });
-app.get("/api/chat", auth, wrap(async (req, res) => {
-  res.json(await ChatMessage.find(chatChannelFilter(chatChannel(req.query.channel))).sort({ createdAt: 1 }).limit(300));
+const validChannel = (value) => value === "secret" ? "secret" : "general";
+const chatChannelFilter = (channel) => channel === "secret" ? { channel: "secret" } : { channel: { $in: ["general", null] } };
+app.post("/api/chat/secret/unlock", auth, (req, res) => {
+  const { username } = req.user;
+  const password = req.body?.password;
+  const valid = (username === process.env.APP_USER && password === process.env.APP_PASS)
+    || (username === process.env.APP_USER2 && password === process.env.APP_PASS2);
+  if (!valid) return res.status(400).json({ error: "Wrong application password" });
+  res.json({ token: jwt.sign({ username, secretChat: true }, process.env.JWT_SECRET, { expiresIn: "15m" }) });
+});
+app.get("/api/chat", (req, res, next) => validChannel(req.query.channel) === "secret" ? secretAuth(req, res, next) : auth(req, res, next), wrap(async (req, res) => {
+  const channel = validChannel(req.query.channel);
+  res.json(await ChatMessage.find(chatChannelFilter(channel)).sort({ createdAt: 1 }).limit(300));
 }));
-app.post("/api/chat", auth, wrap(async (req, res) => {
+app.post("/api/chat", (req, res, next) => validChannel(req.body?.channel) === "secret" ? secretAuth(req, res, next) : auth(req, res, next), wrap(async (req, res) => {
   const text = String(req.body?.text || "").trim();
   if (!text) return res.status(400).json({ error: "Message cannot be empty" });
-  res.status(201).json(await ChatMessage.create({ sender: req.user.username, text, channel: chatChannel(req.body?.channel), seenBy: [req.user.username] }));
+  const channel = validChannel(req.body?.channel);
+  res.status(201).json(await ChatMessage.create({ sender: req.user.username, text, channel, seenBy: [req.user.username] }));
 }));
 app.get("/api/chat/unread", auth, wrap(async (req, res) => {
-  const rows = await ChatMessage.find({ sender: { $ne: req.user.username }, seenBy: { $ne: req.user.username } }).sort({ createdAt: -1 }).lean();
+  const rows = await ChatMessage.find({ ...chatChannelFilter("general"), sender: { $ne: req.user.username }, seenBy: { $ne: req.user.username } }).sort({ createdAt: -1 }).lean();
   const counts = { general: 0 };
-  rows.forEach((message) => { counts[chatChannel(message.channel)] += 1; });
+  rows.forEach(() => { counts.general += 1; });
   res.json({ counts, latest: rows[0] || null });
 }));
-app.put("/api/chat/seen", auth, wrap(async (req, res) => {
-  const channel = chatChannel(req.body?.channel);
+app.put("/api/chat/seen", (req, res, next) => validChannel(req.body?.channel) === "secret" ? secretAuth(req, res, next) : auth(req, res, next), wrap(async (req, res) => {
+  const channel = validChannel(req.body?.channel);
   await ChatMessage.updateMany({ ...chatChannelFilter(channel), sender: { $ne: req.user.username }, seenBy: { $ne: req.user.username } }, { $addToSet: { seenBy: req.user.username } });
   res.json({ ok: true });
 }));
-app.put("/api/chat/typing", auth, wrap(async (req, res) => {
+app.put("/api/chat/typing", (req, res, next) => validChannel(req.body?.channel) === "secret" ? secretAuth(req, res, next) : auth(req, res, next), wrap(async (req, res) => {
   await ChatPresence.findOneAndUpdate({ username: req.user.username },
-    { typingUntil: req.body?.typing ? new Date(Date.now() + 4000) : null, channel: chatChannel(req.body?.channel) }, { upsert: true, new: true });
+    { typingUntil: req.body?.typing ? new Date(Date.now() + 4000) : null, channel: validChannel(req.body?.channel) }, { upsert: true, new: true });
   res.json({ ok: true });
 }));
-app.get("/api/chat/typing", auth, wrap(async (req, res) => {
-  const rows = await ChatPresence.find({ username: { $ne: req.user.username }, channel: chatChannel(req.query.channel), typingUntil: { $gt: new Date() } });
+app.get("/api/chat/typing", (req, res, next) => validChannel(req.query.channel) === "secret" ? secretAuth(req, res, next) : auth(req, res, next), wrap(async (req, res) => {
+  const rows = await ChatPresence.find({ username: { $ne: req.user.username }, channel: validChannel(req.query.channel), typingUntil: { $gt: new Date() } });
   res.json(rows.map((row) => row.username));
 }));
 

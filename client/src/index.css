@@ -28,6 +28,26 @@ button:active { transform: scale(.98); }
 .message-toast strong { color: #0e7c7b; font-size: .78rem; }
 .message-toast span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: .84rem; }
 .chat-panel { display: flex; min-height: min(68vh, 680px); flex-direction: column; overflow: hidden; border: 1px solid #e4eae7; border-radius: 24px; background: white; box-shadow: 0 8px 30px #143b3210; }
+.love-chat { border-color: #f5c3d8; background: #fffafd; box-shadow: 0 8px 30px #c8327020; }
+.love-chat .chat-heading { border-color: #f9dce8; }
+.love-chat .chat-live { background: #fde8f1; color: #b12b68; }
+.love-chat .chat-live i { background: #df5791; }
+.love-chat .mine .chat-bubble { background: linear-gradient(135deg,#ed72a6,#d84e89); }
+.love-chat .theirs .chat-bubble { background: #fde8f1; color: #63334a; }
+.love-chat .chat-sender { color: #bd477c; }
+.love-chat .chat-compose { border-color: #f9dce8; }
+.love-switch { border: 1px solid #f1c3d6; border-radius: 999px; background: #fff0f6; padding: 7px 11px; color: #b33b70; font-size: .72rem; font-weight: 800; }
+.love-unlock { display: flex; min-height: min(68vh,680px); flex-direction: column; align-items: center; justify-content: center; border: 1px solid #f4c8da; border-radius: 26px; background: radial-gradient(ellipse at top,#fff0f6,#fffafd 65%); padding: 32px 24px; text-align: center; box-shadow: 0 12px 38px #c8327014; }
+.love-heart { display: grid; width: 64px; height: 64px; place-items: center; border-radius: 22px; background: #fce1ec; color: #d84e89; font-size: 2.3rem; }
+.love-kicker { margin-top: 18px; color: #c04d7e; font-size: .7rem; font-weight: 900; letter-spacing: .14em; text-transform: uppercase; }
+.love-unlock h2 { margin-top: 4px; color: #8e3159; font-size: 1.8rem; font-weight: 900; }
+.love-copy { max-width: 300px; margin-top: 6px; color: #895d70; font-size: .9rem; }
+.love-unlock form { display: grid; width: min(100%,340px); gap: 10px; margin-top: 24px; text-align: left; }
+.love-unlock form label { color: #7e4d62; font-size: .78rem; font-weight: 800; }
+.love-button { border: 0; border-radius: 14px; background: linear-gradient(135deg,#e96b9d,#cf477f); padding: 13px 16px; color: white; font-weight: 850; box-shadow: 0 7px 18px #d84e8935; }
+.love-button:disabled { opacity: .7; }
+.love-error { margin-top: 12px; color: #b4234c; font-size: .84rem; }
+.love-back { margin-top: 16px; border: 0; background: transparent; color: #a95878; font-size: .8rem; font-weight: 750; }
 .chat-heading { display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid #edf0ee; padding: 18px 20px; }
 .chat-live { display: inline-flex; align-items: center; gap: 6px; border-radius: 999px; background: #e8f6f0; padding: 6px 10px; color: #187854; font-size: .72rem; font-weight: 800; }
 .chat-live i { width: 7px; height: 7px; border-radius: 50%; background: #23a17c; }
