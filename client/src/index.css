@@ -25,6 +25,8 @@ button:active { transform: scale(.98); }
 .nav-badge { position: absolute; top: -5px; right: -10px; min-width: 18px; border: 2px solid white; border-radius: 999px; background: #db4b4b; padding: 1px 4px; color: white; font-size: .56rem; line-height: 1.3; box-shadow: 0 2px 6px #76262635; }
 .notification-button { display: grid; width: 36px; height: 36px; place-items: center; border: 1px solid #dce6e2; border-radius: 50%; background: white; color: #405553; }
 .message-toast { position: fixed; z-index: 50; top: max(16px, env(safe-area-inset-top)); right: 16px; display: flex; width: min(360px, calc(100vw - 32px)); flex-direction: column; gap: 3px; border: 1px solid #cfe4dc; border-radius: 16px; background: #fffffff5; padding: 13px 16px; color: #263b38; text-align: left; box-shadow: 0 14px 45px #143b3230; backdrop-filter: blur(14px); animation: win-pop 240ms ease-out both; }
+.message-toast-love { border-color: #f1bdd2; background: #fff7fa; box-shadow: 0 14px 45px #c8327025; }
+.message-toast-love strong { color: #bd477c; }
 .message-toast strong { color: #0e7c7b; font-size: .78rem; }
 .message-toast span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: .84rem; }
 .chat-panel { display: flex; min-height: min(68vh, 680px); flex-direction: column; overflow: hidden; border: 1px solid #e4eae7; border-radius: 24px; background: white; box-shadow: 0 8px 30px #143b3210; }
@@ -38,7 +40,6 @@ button:active { transform: scale(.98); }
 .love-chat .chat-compose { border-color: #f9dce8; }
 .love-switch { border: 1px solid #f1c3d6; border-radius: 999px; background: #fff0f6; padding: 7px 11px; color: #b33b70; font-size: .72rem; font-weight: 800; }
 .love-unlock { display: flex; min-height: min(68vh,680px); flex-direction: column; align-items: center; justify-content: center; border: 1px solid #f4c8da; border-radius: 26px; background: radial-gradient(ellipse at top,#fff0f6,#fffafd 65%); padding: 32px 24px; text-align: center; box-shadow: 0 12px 38px #c8327014; }
-.love-heart { display: grid; width: 64px; height: 64px; place-items: center; border-radius: 22px; background: #fce1ec; color: #d84e89; font-size: 2.3rem; }
 .love-kicker { margin-top: 18px; color: #c04d7e; font-size: .7rem; font-weight: 900; letter-spacing: .14em; text-transform: uppercase; }
 .love-unlock h2 { margin-top: 4px; color: #8e3159; font-size: 1.8rem; font-weight: 900; }
 .love-copy { max-width: 300px; margin-top: 6px; color: #895d70; font-size: .9rem; }
