@@ -56,10 +56,6 @@ app.post("/api/chat/secret/unlock", auth, (req, res) => {
   if (!valid) return res.status(400).json({ error: "Wrong application password" });
   res.json({ token: jwt.sign({ username, secretChat: true }, process.env.JWT_SECRET, { expiresIn: "15m" }) });
 });
-app.get("/api/chat/secret/unread", secretAuth, wrap(async (req, res) => {
-  const latest = await ChatMessage.findOne({ channel: "secret", sender: { $ne: req.user.username }, seenBy: { $ne: req.user.username } }).sort({ createdAt: -1 }).lean();
-  res.json({ latest: latest || null });
-}));
 app.get("/api/chat", (req, res, next) => validChannel(req.query.channel) === "secret" ? secretAuth(req, res, next) : auth(req, res, next), wrap(async (req, res) => {
   const channel = validChannel(req.query.channel);
   res.json(await ChatMessage.find(chatChannelFilter(channel)).sort({ createdAt: 1 }).limit(300));

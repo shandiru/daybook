@@ -30,7 +30,6 @@ export const api = {
   delExpense: (id) => req(`/api/expenses/${id}`, "DELETE"),
   chat: (channel = "general") => req(`/api/chat?channel=${encodeURIComponent(channel)}`),
   unlockSecretChat: (password) => req("/api/chat/secret/unlock", "POST", { password }),
-  secretChatUnread: (token) => req("/api/chat/secret/unread", "GET", undefined, token),
   secretChat: (channel, token) => req(`/api/chat?channel=${encodeURIComponent(channel)}`, "GET", undefined, token),
   sendSecretChat: (text, channel, token) => req("/api/chat", "POST", { text, channel }, token),
   markSecretChatSeen: (channel, token) => req("/api/chat/seen", "PUT", { channel }, token),

@@ -1,13 +1,13 @@
 ﻿import { useCallback, useEffect, useRef, useState } from "react";
 import { api, session } from "../api.js";
 
-export default function Chat({ compact = false, channel = "general" }) {
+export default function Chat({ compact = false, channel = "general", openSecretRequest = 0 }) {
   const [messages, setMessages] = useState([]);
   const [typing, setTyping] = useState([]);
   const [text, setText] = useState("");
   const [error, setError] = useState("");
-  const [secretMode, setSecretMode] = useState(() => !compact && Boolean(sessionStorage.getItem("maximumLoveToken")));
-  const [secretToken, setSecretToken] = useState(() => !compact ? sessionStorage.getItem("maximumLoveToken") || "" : "");
+  const [secretMode, setSecretMode] = useState(false);
+  const [secretToken, setSecretToken] = useState("");
   const [password, setPassword] = useState("");
   const [unlocking, setUnlocking] = useState(false);
   const endRef = useRef(null);
@@ -15,6 +15,9 @@ export default function Chat({ compact = false, channel = "general" }) {
   const currentUser = session.user?.name;
   const activeChannel = !compact && secretMode ? "secret" : channel;
   const accessToken = activeChannel === "secret" ? secretToken : "";
+  useEffect(() => {
+    if (!compact && openSecretRequest) { setSecretMode(true); setSecretToken(""); setMessages([]); setPassword(""); setError(""); }
+  }, [compact, openSecretRequest]);
   const refresh = useCallback(async () => {
     if (activeChannel === "secret" && !accessToken) return;
     try {
@@ -28,7 +31,7 @@ export default function Chat({ compact = false, channel = "general" }) {
         else await api.markChatSeen(activeChannel);
         window.dispatchEvent(new CustomEvent("chat-seen", { detail: { channel: activeChannel } }));
       }
-    } catch (e) { setError(e.message); if (activeChannel === "secret" && /expired|unlock/i.test(e.message)) { sessionStorage.removeItem("maximumLoveToken"); setSecretToken(""); } }
+    } catch (e) { setError(e.message); if (activeChannel === "secret" && /expired|unlock/i.test(e.message)) setSecretToken(""); }
   }, [activeChannel, accessToken]);
   useEffect(() => {
     refresh();
@@ -47,7 +50,7 @@ export default function Chat({ compact = false, channel = "general" }) {
   }
   async function unlock(e) {
     e.preventDefault(); setUnlocking(true); setError("");
-    try { const result = await api.unlockSecretChat(password); sessionStorage.setItem("maximumLoveToken", result.token); setSecretToken(result.token); setPassword(""); }
+    try { const result = await api.unlockSecretChat(password); setSecretToken(result.token); setPassword(""); }
     catch (e) { setError(e.message); }
     finally { setUnlocking(false); }
   }
@@ -63,7 +66,7 @@ export default function Chat({ compact = false, channel = "general" }) {
   }
   if (!compact && secretMode && !secretToken) return <section className="love-unlock"><p className="love-kicker">A private place for two</p><h2>Maximum Love</h2><p className="love-copy">This private conversation is kept separate from your regular chat.</p><form onSubmit={unlock}><label htmlFor="love-password">Enter your application password</label><input id="love-password" className="field" type="password" autoComplete="current-password" value={password} onChange={(e) => setPassword(e.target.value)} required /><button className="love-button" disabled={unlocking}>{unlocking ? "Opening…" : "Unlock chat"}</button></form>{error && <p className="love-error">{error}</p>}<button className="love-back" onClick={() => { setSecretMode(false); setError(""); }}>← Back to regular chat</button></section>;
   return <section className={`chat-panel ${compact ? "chat-panel-compact" : ""} ${activeChannel === "secret" ? "love-chat" : ""}`}>
-    <div className="chat-heading"><div><h2 className="text-xl font-extrabold">{activeChannel === "secret" ? "Maximum Love" : "Chat"}</h2><p className="text-sm text-ink/55">{activeChannel === "secret" ? "Your private romantic conversation" : "The same shared conversation"}</p></div><div className="flex items-center gap-2">{!compact && (activeChannel === "secret" ? <button className="love-switch" onClick={() => { sessionStorage.removeItem("maximumLoveToken"); setSecretToken(""); setSecretMode(false); setMessages([]); setError(""); }}>Lock</button> : <button className="love-switch" onClick={() => { setSecretMode(true); setMessages([]); setError(""); }}>Maximum Love</button>)}<span className="chat-live"><i /> Live</span></div></div>
+    <div className="chat-heading"><div><h2 className="text-xl font-extrabold">{activeChannel === "secret" ? "Maximum Love" : "Chat"}</h2><p className="text-sm text-ink/55">{activeChannel === "secret" ? "Your private romantic conversation" : "The same shared conversation"}</p></div><div className="flex items-center gap-2">{!compact && activeChannel === "secret" && <button className="love-switch" onClick={() => { setSecretToken(""); setSecretMode(false); setMessages([]); setError(""); }}>Close</button>}<span className="chat-live"><i /> Live</span></div></div>
     <div className="chat-messages" aria-live="polite">
       {!messages.length && <p className="chat-empty">No messages yet. Say hello!</p>}
       {messages.map((message) => {
